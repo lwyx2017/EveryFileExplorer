@@ -1,15 +1,6 @@
 Every File Explorer
 ===================
-<img src="http://florian.nouwt.com/EFEIcon.png" height="256px" align="right"/>
-Every File Explorer is a dynamic tool to browse, edit, view, explore and modify files. It is plugin-based, so you can make your own plugins for it aswell!
+The original author of this project is Gericom. This repository is forked from https://github.com/Gericom/EveryFileExplorer. I intend to make some modifications and fix certain issues. However, please note that my programming skills are limited and I cannot implement significant updates. Please manage your expectations and consider disregarding this project.
 
-<h3>Building</h3>
-Just open the project in Visual Studio, and build it. You may need to specify the path to the 2 dlls in the Libraries directory. Afterwards, copy them in the Plugins directory aswell. Don't forget to unblock it from external sources!
-
-<h3>Provided Plugins</h3>
-* 3DS
-* Common Compressors
-* Common Files
-* Lego Pirates of the Carribean
-* Mario Kart
-* NDS
+<h3>Note</h3>
+This fork represents personal modifications and should not be considered an official project version. Users seeking full functionality should reference the original repository.
