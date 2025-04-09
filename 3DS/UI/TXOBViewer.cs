@@ -50,7 +50,16 @@ namespace _3DS.UI
         {
             if (Texture.HWFormat != Textures.ImageFormat.RGBA8 &&
                 Texture.HWFormat != Textures.ImageFormat.RGB8 &&
+                Texture.HWFormat != Textures.ImageFormat.RGBA5551 &&
                 Texture.HWFormat != Textures.ImageFormat.RGB565 &&
+                Texture.HWFormat != Textures.ImageFormat.RGBA4 &&
+                Texture.HWFormat != Textures.ImageFormat.LA8 &&
+                Texture.HWFormat != Textures.ImageFormat.HILO8 &&
+                Texture.HWFormat != Textures.ImageFormat.L8 &&
+                Texture.HWFormat != Textures.ImageFormat.A8 &&
+                Texture.HWFormat != Textures.ImageFormat.LA4 &&
+                Texture.HWFormat != Textures.ImageFormat.L4 &&
+                Texture.HWFormat != Textures.ImageFormat.A4 &&
                 Texture.HWFormat != Textures.ImageFormat.ETC1 &&
                 Texture.HWFormat != Textures.ImageFormat.ETC1A4)
             {
