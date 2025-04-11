@@ -52,8 +52,8 @@ namespace NDS.NitroSystem.SND
 		{
 			public override string GetCategory()
 			{
-				return Category_Archives;
-			}
+                return Category_Sound;
+            }
 
 			public override string GetFileDescription()
 			{
@@ -62,12 +62,12 @@ namespace NDS.NitroSystem.SND
 
 			public override string GetFileFilter()
 			{
-				return "Nitro Sound Wave Archive (*.sdat)|*.sdat";
+				return "Nitro Sound Wave Archive (*.swar)|*.swar";
 			}
 
 			public override Bitmap GetIcon()
 			{
-				return null;
+				return Resource.speaker2_box;
 			}
 
 			public override FormatMatch IsFormat(EFEFile File)
