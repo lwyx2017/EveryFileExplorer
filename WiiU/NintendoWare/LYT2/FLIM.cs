@@ -11,9 +11,15 @@ using LibEveryFileExplorer.IO.Serialization;
 
 namespace WiiU.NintendoWare.LYT2
 {
-	public class FLIM : FileFormat<FLIM.FLIMIdentifier>, IConvertable, IViewable, IWriteable
+	public class FLIM : FileFormat<FLIM.FLIMIdentifier>, IConvertable, IFileCreatable, IViewable, IWriteable
     {
-		public FLIM(byte[] Data)
+        public FLIM()
+        {
+            Data = new byte[0];
+            Header = new FLIMHeader();
+            Image = new imag();
+        }
+        public FLIM(byte[] Data)
 		{
 			EndianBinaryReaderEx er = new EndianBinaryReaderEx(new MemoryStream(Data), Endianness.LittleEndian);
 			er.BaseStream.Position = Data.Length - 0x28;
@@ -74,28 +80,67 @@ namespace WiiU.NintendoWare.LYT2
 			return false;
 		}
 
-		public byte[] Data;
+        public bool CreateFromFile()
+        {
+            System.Windows.Forms.OpenFileDialog f = new System.Windows.Forms.OpenFileDialog();
+            f.Filter = "PNG Files (*.png)|*.png";
+            if (f.ShowDialog() == System.Windows.Forms.DialogResult.OK
+                && f.FileName.Length > 0)
+            {
+                Bitmap b = new Bitmap(new MemoryStream(File.ReadAllBytes(f.FileName)));
+                Image.Width = (ushort)b.Width;
+                Image.Height = (ushort)b.Height;
+                Image.Format = 11;
+                Data = _3DS.GPU.Textures.FromBitmap(b, _3DS.GPU.Textures.ImageFormat.ETC1A4);
+                DataLength = (uint)Data.Length;
+                return true;
+            }
+            return false;
+        }
+
+        public byte[] Data;
 
 		public FLIMHeader Header;
 
 		public class FLIMHeader
 		{
+			public FLIMHeader()
+			{
+				Signature = "FLIM";
+				Endianness = 0xFFFE;
+				HeaderSize = 0x14;
+				Version = 0x02020000;
+				NrBlocks = 1;
+			}
+
 			public FLIMHeader(EndianBinaryReaderEx er)
 			{
 				er.ReadObject(this);
 			}
             public void Write(EndianBinaryWriterEx er)
             {
-                er.Write(Signature);
-                er.Write((ushort)0xFEFF);
-                er.Write(HeaderSize);
-                er.Write(Version);
-                er.Write(FileSize);
-                er.Write(NrBlocks);
+				if (Endianness == 0xFFFE)
+				{
+					er.Write(Signature, Encoding.ASCII, false);
+					er.Write((ushort)0xFEFF);
+					er.Write(HeaderSize);
+					er.Write(Version);
+					er.Write(FileSize);
+					er.Write(NrBlocks);
+			}
+				else
+				{
+                    er.Write(Signature, Encoding.ASCII, false);
+                    er.Write(Endianness);
+                    er.Write(HeaderSize);
+                    er.Write(Version);
+                    er.Write(FileSize);
+                    er.Write(NrBlocks);
+                }
             }
             [BinaryStringSignature("FLIM")]
 			[BinaryFixedSize(4)]
-			public UInt32 Signature;
+			public string Signature;
 			[BinaryBOM(0xFFFE)]
 			public UInt16 Endianness;
 			public UInt16 HeaderSize;
@@ -107,7 +152,12 @@ namespace WiiU.NintendoWare.LYT2
         public imag Image;
 		public class imag
 		{
-			public imag(EndianBinaryReaderEx er)
+            public imag()
+            {
+                Signature = "imag";
+                SectionSize = 0x10;
+            }
+            public imag(EndianBinaryReaderEx er)
 			{
 				er.ReadObject(this);
 			}
@@ -133,14 +183,13 @@ namespace WiiU.NintendoWare.LYT2
         }
         public UInt32 DataLength;
 
-
         //Tempoarly use 3ds stuff!
         public Bitmap ToBitmap()
 		{
 			if (Header.Endianness == 0xFFFE)//3ds
 			{
-				_3DS.GPU.Textures.ImageFormat f3 = 0;
-				switch (Image.Format)
+                _3DS.GPU.Textures.ImageFormat f3;
+                switch (Image.Format)
 				{
 					case 0: f3 = _3DS.GPU.Textures.ImageFormat.L8; break;
 					case 1: f3 = _3DS.GPU.Textures.ImageFormat.A8; break;
