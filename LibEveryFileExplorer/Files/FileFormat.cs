@@ -30,7 +30,8 @@ namespace LibEveryFileExplorer.Files
 		protected const String Category_Roms = "Roms";
 		protected const String Category_Screens = "Screens";
 		protected const String Category_Shaders = "Shaders";
-		protected const String Category_Strings = "Strings";
+        protected const String Category_Sound = "Sound";
+        protected const String Category_Strings = "Strings";
 		protected const String Category_Textures = "Textures";
 		protected const String Category_Videos = "Videos";
 

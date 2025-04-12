@@ -67,6 +67,9 @@
   <ItemGroup>
     <Compile Include="GPU\R600Tiling.cs" />
     <Compile Include="GPU\Textures.cs" />
+    <Compile Include="NintendoWare\FONT\FFNT.cs" />
+    <Compile Include="NintendoWare\LYT2\FLYT.cs" />
+    <Compile Include="NintendoWare\LYT2\FLAN.cs" />
     <Compile Include="NintendoWare\LYT2\FLIM.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource.Designer.cs">
@@ -82,7 +85,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="NintendoWare\FONT\" />
     <Folder Include="NintendoWare\GFX\" />
     <Folder Include="NintendoWare\SND\" />
   </ItemGroup>
