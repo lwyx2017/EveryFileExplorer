@@ -50,13 +50,16 @@ namespace WiiU.NintendoWare.LYT2
         public byte[] Write()
         {
             MemoryStream m = new MemoryStream();
-            EndianBinaryWriterEx er = new EndianBinaryWriterEx(m, Endianness.LittleEndian);
+            Endianness endian = Header.Endianness == 0xFFFE ? Endianness.LittleEndian : Endianness.BigEndian;
+            EndianBinaryWriterEx er = new EndianBinaryWriterEx(m, endian);
             er.Write(Data, 0, Data.Length);
-            Header.Write(er);
+            long headerPosition = er.BaseStream.Position;
+            er.Write(new byte[0x14], 0, 0x14);
             Image.Write(er);
             er.Write(DataLength);
-            er.BaseStream.Position = Data.Length + 0xC;
-            er.Write((uint)er.BaseStream.Length);
+            Header.FileSize = (uint)er.BaseStream.Length;
+            er.BaseStream.Position = headerPosition;
+            Header.Write(er);
             er.BaseStream.Position = er.BaseStream.Length;
             byte[] result = m.ToArray();
             er.Close();
@@ -119,17 +122,17 @@ namespace WiiU.NintendoWare.LYT2
 			}
             public void Write(EndianBinaryWriterEx er)
             {
-				if (Endianness == 0xFFFE)
-				{
-					er.Write(Signature, Encoding.ASCII, false);
-					er.Write((ushort)0xFEFF);
-					er.Write(HeaderSize);
-					er.Write(Version);
-					er.Write(FileSize);
-					er.Write(NrBlocks);
-			}
-				else
-				{
+                if (Endianness == 0xFFFE)
+                {
+                    er.Write(Signature, Encoding.ASCII, false);
+                    er.Write((ushort)0xFEFF);
+                    er.Write(HeaderSize);
+                    er.Write(Version);
+                    er.Write(FileSize);
+                    er.Write(NrBlocks);
+                }
+                else
+                {
                     er.Write(Signature, Encoding.ASCII, false);
                     er.Write(Endianness);
                     er.Write(HeaderSize);
