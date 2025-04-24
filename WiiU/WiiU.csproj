@@ -77,6 +77,12 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resource.resx</DependentUpon>
     </Compile>
+    <Compile Include="UI\BFLIMGenDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\BFLIMGenDialog.Designer.cs">
+      <DependentUpon>BFLIMGenDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\FLIMViewer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -102,6 +108,9 @@
     <EmbeddedResource Include="Resource.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\BFLIMGenDialog.resx">
+      <DependentUpon>BFLIMGenDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\FLIMViewer.resx">
       <DependentUpon>FLIMViewer.cs</DependentUpon>
