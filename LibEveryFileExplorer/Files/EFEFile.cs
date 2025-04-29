@@ -42,7 +42,12 @@ namespace LibEveryFileExplorer.Files
 			}
 			IsCompressed = false;
 			CompressionFormat = null;
-			if (Compressions.Count == 1)
+            if (this.Name == "utility.bin")
+            {
+                Data = FileData;
+                return;
+            }
+            if (Compressions.Count == 1)
 			{
 				CompressionFormatBase c = (CompressionFormatBase)Compressions[0].InvokeMember("", System.Reflection.BindingFlags.CreateInstance, null, null, new object[0]);
 				try
