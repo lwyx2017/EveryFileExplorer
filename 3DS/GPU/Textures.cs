@@ -455,6 +455,89 @@ namespace _3DS.GPU
             return bitm;
         }
 
+        public static Bitmap ToBitmap(byte[] Data, int Width, int Height, ImageFormat Format, byte Flag, bool ExactSize = false)
+        {
+            Bitmap baseBitmap = ToBitmap(Data, 0, Width, Height, Format, ExactSize);
+            return ApplySwizzleTransformation(baseBitmap, Flag);
+        }
+
+        private static unsafe Bitmap ApplySwizzleTransformation(Bitmap baseBitmap, byte SwizzleFlag)
+        {
+            if (baseBitmap == null) return null;
+            Bitmap transformed = null;
+            BitmapData srcData = baseBitmap.LockBits(new Rectangle(0, 0, baseBitmap.Width, baseBitmap.Height),
+                ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            try
+            {
+                int width = baseBitmap.Width;
+                int height = baseBitmap.Height;
+                uint* srcPtr = (uint*)srcData.Scan0;
+
+                switch (SwizzleFlag)
+                {
+                    case 2:
+                        transformed = new Bitmap(width, height);
+                        BitmapData destDataY = transformed.LockBits(new Rectangle(0, 0, width, height),
+                            ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+                        uint* destPtrY = (uint*)destDataY.Scan0;
+                        for (int y = 0; y < height; y++)
+                        {
+                            for (int x = 0; x < width; x++)
+                            {
+                                int srcIndex = y * width + x;
+                                int destIndex = (height - 1 - y) * width + x;
+                                destPtrY[destIndex] = srcPtr[srcIndex];
+                            }
+                        }
+                        transformed.UnlockBits(destDataY);
+                        break;
+
+                    case 4:
+                        transformed = new Bitmap(height, width);
+                        BitmapData destData90 = transformed.LockBits(new Rectangle(0, 0, height, width),
+                            ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+                        uint* destPtr90 = (uint*)destData90.Scan0;
+                        for (int y = 0; y < height; y++)
+                        {
+                            for (int x = 0; x < width; x++)
+                            {
+                                int srcIndex = y * width + x;
+                                int destIndex = (width - 1 - x) * height + y;
+                                destPtr90[destIndex] = srcPtr[srcIndex];
+                            }
+                        }
+                        transformed.UnlockBits(destData90);
+                        break;
+
+                    case 8:
+                        transformed = new Bitmap(height, width);
+                        BitmapData destDataTranspose = transformed.LockBits(new Rectangle(0, 0, height, width),
+                            ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+                        uint* destPtrTranspose = (uint*)destDataTranspose.Scan0;
+                        for (int y = 0; y < height; y++)
+                        {
+                            for (int x = 0; x < width; x++)
+                            {
+                                int srcIndex = y * width + x;
+                                int destIndex = x * height + y;
+                                destPtrTranspose[destIndex] = srcPtr[srcIndex];
+                            }
+                        }
+                        transformed.UnlockBits(destDataTranspose);
+                        break;
+
+                    default:
+                        throw new Exception("Unsupported Swizzle Mode!");
+                }
+            }
+            finally
+            {
+                baseBitmap.UnlockBits(srcData);
+                baseBitmap.Dispose();
+            }
+            return transformed;
+        }
+
         public static unsafe byte[] FromBitmap(Bitmap Picture, ImageFormat Format, bool ExactSize = false)
         {
             if (ExactSize && ((Picture.Width % 8) != 0 || (Picture.Height % 8) != 0)) return null;

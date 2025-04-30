@@ -270,9 +270,15 @@ namespace WiiU.NintendoWare.LYT2
 					case 0x13: f3 = _3DS.GPU.Textures.ImageFormat.A4; break;
 					default: throw new Exception("Unknown Image Format!");
 				}
-				if (Image.Flag == 0) return _3DS.GPU.Textures.ToBitmap(Data, Image.Width, Image.Height, f3);
-				return _3DS.GPU.Textures.ToBitmap(Data, Image.Height, Image.Width, f3);
-			}
+                if (Image.Flag == 0)
+                {
+                    return _3DS.GPU.Textures.ToBitmap(Data, Image.Height, Image.Width, f3);
+                }
+                else
+                {
+                    return _3DS.GPU.Textures.ToBitmap(Data, Image.Height, Image.Width, f3, Image.Flag);
+                }
+            }
 			else
 			{
                 GPU.Textures.ImageFormat fu;
