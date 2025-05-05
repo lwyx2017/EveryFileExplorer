@@ -119,6 +119,9 @@
   <ItemGroup>
     <None Include="Resources\image.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\zone.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetPath)" "$(SolutionDir)\EveryFileExplorer\bin\x64\Debug\Plugins\$(TargetFileName)"</PostBuildEvent>
