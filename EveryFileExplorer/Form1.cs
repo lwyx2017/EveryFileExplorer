@@ -135,7 +135,8 @@ namespace EveryFileExplorer
 
 		void Compress_Click(object sender, EventArgs e)
 		{
-			openFileDialog1.Filter = "All Files (*.*)|*.*";
+            openFileDialog1.FileName = string.Empty;
+            openFileDialog1.Filter = "All Files (*.*)|*.*";
 			if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK
 				&& openFileDialog1.FileName.Length > 0)
 			{
@@ -164,7 +165,8 @@ namespace EveryFileExplorer
 
 		void Decompress_Click(object sender, EventArgs e)
 		{
-			openFileDialog1.Filter = "All Files (*.*)|*.*";
+            openFileDialog1.FileName = string.Empty;
+            openFileDialog1.Filter = "All Files (*.*)|*.*";
 			if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK
 				&& openFileDialog1.FileName.Length > 0)
 			{
@@ -449,7 +451,8 @@ namespace EveryFileExplorer
 
 		private void menuItem1_Click(object sender, EventArgs e)
 		{
-			openFileDialog1.Filter = "Every File Explorer Project (*.efeproj)|*.efeproj";
+            openFileDialog1.FileName = string.Empty;
+            openFileDialog1.Filter = "Every File Explorer Project (*.efeproj)|*.efeproj";
 			if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK
 				&& openFileDialog1.FileName.Length > 0)
 			{
