@@ -211,6 +211,7 @@ namespace EveryFileExplorer
 		{
 			if (opening) return;
 			opening = true;
+			openFileDialog1.FileName = string.Empty;
 			String Filter = "";
 			List<String> Filters = new List<string>();
 			Filters.Add("all files (*.*)|*.*");
