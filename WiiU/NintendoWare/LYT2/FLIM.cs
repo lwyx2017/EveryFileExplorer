@@ -138,11 +138,11 @@ namespace WiiU.NintendoWare.LYT2
                         Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.LA4);
                         break;
                     case 10:
-                        Image.Format = 12;
+                        Image.Format = 0x12;
                         Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.L4);
                         break;
                     case 11:
-                        Image.Format = 13;
+                        Image.Format = 0x13;
                         Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.A4);
                         break;
                     case 12:
