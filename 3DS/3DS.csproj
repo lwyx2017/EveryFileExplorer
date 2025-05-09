@@ -73,6 +73,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BYML.cs" />
+    <Compile Include="CBMD.cs" />
     <Compile Include="GPU\PICA\FragmentLightSource.cs" />
     <Compile Include="N3DSPlugin.cs" />
     <Compile Include="NintendoWare\FONT\CFNT.cs" />
@@ -122,6 +123,12 @@
     </Compile>
     <Compile Include="UI\BCLIMGenDialog.Designer.cs">
       <DependentUpon>BCLIMGenDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\CBMDViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\CBMDViewer.Designer.cs">
+      <DependentUpon>CBMDViewer.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\CFNTViewer.cs">
       <SubType>Form</SubType>
@@ -215,6 +222,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonCompressors\CommonCompressors.csproj">
+      <Project>{ce7a5169-bb6e-4112-9e18-9836ff94fa4c}</Project>
+      <Name>CommonCompressors</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CommonFiles\CommonFiles.csproj">
       <Project>{4D0F5EC8-4730-4D62-AFA5-80AD4AD14625}</Project>
       <Name>CommonFiles</Name>
@@ -231,6 +242,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\BCLIMGenDialog.resx">
       <DependentUpon>BCLIMGenDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\CBMDViewer.resx">
+      <DependentUpon>CBMDViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\CFNTViewer.resx">
       <DependentUpon>CFNTViewer.cs</DependentUpon>
