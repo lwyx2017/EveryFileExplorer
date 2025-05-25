@@ -58,6 +58,13 @@ namespace LibEveryFileExplorer.IO
             WriteBuffer(1, 1);
         }
 
+        public void Write(byte[] value)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            Write(value, 0, value.Length);
+        }
+
         public void Write(byte[] value, int offset, int count)
         {
             CreateBuffer(count);
