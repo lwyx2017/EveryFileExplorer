@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace LibEveryFileExplorer.IO
 {
@@ -53,6 +50,12 @@ namespace LibEveryFileExplorer.IO
 			Data[Offset] = (byte)(Value & 0xFF);
 			Data[Offset + 1] = (byte)((Value >> 8) & 0xFF);
 		}
+
+        public static void WriteU16BE(byte[] Data, int Offset, ushort Value)
+        {
+            Data[Offset] = (byte)((Value >> 8) & 0xFF);
+            Data[Offset + 1] = (byte)(Value & 0xFF);
+        }
 
         public static uint ReadU24BE(byte[] Data, int Offset)
         {
