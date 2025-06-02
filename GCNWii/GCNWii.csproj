@@ -75,8 +75,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resource.resx</DependentUpon>
     </Compile>
-    <Compile Include="TPL.cs" />
-    <Compile Include="U8.cs" />
+    <Compile Include="NintendoWare\LYT\TPL.cs" />
+    <Compile Include="NintendoWare\LYT\U8.cs" />
     <Compile Include="UI\BTIViewer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -133,7 +133,6 @@
     <Folder Include="JSystem\J2D\" />
     <Folder Include="JSystem\J3D\" />
     <Folder Include="JSystem\JAS\" />
-    <Folder Include="NintendoWare\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

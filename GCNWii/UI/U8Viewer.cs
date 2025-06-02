@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using LibEveryFileExplorer.Files.SimpleFileSystem;
 using LibEveryFileExplorer.Files;
 using LibEveryFileExplorer;
+using GCNWii.NintendoWare.LYT;
 
 namespace GCNWii.UI
 {
@@ -22,7 +18,7 @@ namespace GCNWii.UI
 			InitializeComponent();
 		}
 
-		private void SARCViewer_Load(object sender, EventArgs e)
+		private void U8Viewer_Load(object sender, EventArgs e)
 		{
 			fileBrowser1.UpdateDirectories(Root.GetTreeNodes());
 		}

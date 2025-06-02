@@ -19,7 +19,7 @@ namespace GCNWii.UI
 			InitializeComponent();
 		}
 
-		private void CLIMViewer_Load(object sender, EventArgs e)
+		private void BTIViewer_Load(object sender, EventArgs e)
 		{
 			pictureBox1.Image = Image.ToBitmap();
 		}

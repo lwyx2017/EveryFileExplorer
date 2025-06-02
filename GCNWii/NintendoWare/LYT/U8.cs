@@ -11,7 +11,7 @@ using System.Windows.Forms;
 using LibEveryFileExplorer.Files.SimpleFileSystem;
 using GCNWii.UI;
 
-namespace GCNWii
+namespace GCNWii.NintendoWare.LYT
 {
 	public class U8 : FileFormat<U8.U8Identifier>, IViewable
 	{

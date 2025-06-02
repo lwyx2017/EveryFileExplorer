@@ -45,15 +45,15 @@
 			this.pictureBox1.TabIndex = 0;
 			this.pictureBox1.TabStop = false;
 			// 
-			// CLIMViewer
+			// BTIViewer
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(565, 386);
 			this.Controls.Add(this.pictureBox1);
-			this.Name = "CLIMViewer";
-			this.Text = "CLIMViewer";
-			this.Load += new System.EventHandler(this.CLIMViewer_Load);
+			this.Name = "BTIViewer";
+			this.Text = "BTIViewer";
+			this.Load += new System.EventHandler(this.BTIViewer_Load);
 			((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
 			this.ResumeLayout(false);
 

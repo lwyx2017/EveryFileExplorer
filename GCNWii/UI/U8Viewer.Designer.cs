@@ -119,7 +119,7 @@
 			// 
 			this.folderBrowserDialog1.Description = "Select the directory to export the content of current directory to.";
 			// 
-			// DARCViewer
+			// U8Viewer
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -127,9 +127,9 @@
 			this.Controls.Add(this.fileBrowser1);
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.Menu = this.mainMenu1;
-			this.Name = "DARCViewer";
-			this.Text = "DARC Viewer";
-			this.Load += new System.EventHandler(this.SARCViewer_Load);
+			this.Name = "U8Viewer";
+			this.Text = "U8 Viewer";
+			this.Load += new System.EventHandler(this.U8Viewer_Load);
 			this.ResumeLayout(false);
 
 		}

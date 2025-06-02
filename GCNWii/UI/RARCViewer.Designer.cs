@@ -233,7 +233,7 @@
 			// 
 			this.saveFileDialog1.Title = "Export...";
 			// 
-			// NARCViewer
+			// RARCViewer
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -241,9 +241,9 @@
 			this.Controls.Add(this.fileBrowser1);
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.Menu = this.mainMenu1;
-			this.Name = "NARCViewer";
-			this.Text = "NARC Viewer";
-			this.Load += new System.EventHandler(this.NARCViewer_Load);
+			this.Name = "RARCViewer";
+			this.Text = "RARC Viewer";
+			this.Load += new System.EventHandler(this.RARCViewer_Load);
 			this.ResumeLayout(false);
 
 		}

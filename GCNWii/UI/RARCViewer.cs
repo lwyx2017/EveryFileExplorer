@@ -24,7 +24,7 @@ namespace GCNWii.UI
 			InitializeComponent();
 		}
 
-		private void NARCViewer_Load(object sender, EventArgs e)
+		private void RARCViewer_Load(object sender, EventArgs e)
 		{
 			fileBrowser1.UpdateDirectories(Root.GetTreeNodes());
 		}
