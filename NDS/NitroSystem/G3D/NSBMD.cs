@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 using LibEveryFileExplorer.Files;
 using System.Drawing;
 using System.IO;
@@ -10,7 +9,7 @@ using LibEveryFileExplorer.IO;
 
 namespace NDS.NitroSystem.G3D
 {
-	public class NSBMD : FileFormat<NSBMD.NSBMDIdentifier>, IViewable//, IWriteable
+	public class NSBMD : FileFormat<NSBMD.NSBMDIdentifier>, IViewable, IWriteable
 	{
 		public NSBMD(byte[] Data)
 		{
@@ -35,12 +34,17 @@ namespace NDS.NitroSystem.G3D
 			}
 		}
 
-		public System.Windows.Forms.Form GetDialog()
+		public Form GetDialog()
 		{
 			return new NSBMDViewer(this);
 		}
 
-		public byte[] Write()
+        public string GetSaveDefaultFileFilter()
+        {
+            return "Nitro System Binary Model (*.nsbmd)|*.nsbmd";
+        }
+
+        public byte[] Write()
 		{
 			MemoryStream m = new MemoryStream();
 			EndianBinaryWriter er = new EndianBinaryWriter(m, Endianness.LittleEndian);

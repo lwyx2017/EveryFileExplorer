@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Drawing;
 using LibEveryFileExplorer.Files;
@@ -11,8 +9,8 @@ using LibEveryFileExplorer.IO;
 
 namespace NDS.NitroSystem.G3D
 {
-	public class NSBTX : FileFormat<NSBTX.NSBTXIdentifier>, IViewable
-	{
+	public class NSBTX : FileFormat<NSBTX.NSBTXIdentifier>, IViewable, IWriteable
+    {
 		public NSBTX(byte[] Data)
 		{
 			EndianBinaryReader er = new EndianBinaryReader(new MemoryStream(Data), Endianness.LittleEndian);
@@ -36,7 +34,12 @@ namespace NDS.NitroSystem.G3D
 			return new NSBTXViewer(this);
 		}
 
-		public byte[] Write()
+        public string GetSaveDefaultFileFilter()
+        {
+            return "Nitro System Binary Texture (*.nsbtx)|*.nsbtx";
+        }
+
+        public byte[] Write()
 		{
 			MemoryStream m = new MemoryStream();
 			EndianBinaryWriter er = new EndianBinaryWriter(m, Endianness.LittleEndian);
