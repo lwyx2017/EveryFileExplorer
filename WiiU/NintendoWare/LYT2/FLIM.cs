@@ -272,7 +272,7 @@ namespace WiiU.NintendoWare.LYT2
 				}
                 if (Image.Flag == 0)
                 {
-                    return _3DS.GPU.Textures.ToBitmap(Data, Image.Height, Image.Width, f3);
+                    return _3DS.GPU.Textures.ToBitmap(Data, Image.Width, Image.Height, f3);
                 }
                 else
                 {
