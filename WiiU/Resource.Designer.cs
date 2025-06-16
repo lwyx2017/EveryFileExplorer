@@ -73,6 +73,16 @@ namespace WiiU {
         /// <summary>
         ///   查找 System.Drawing.Bitmap 类型的本地化资源。
         /// </summary>
+        internal static System.Drawing.Bitmap leaf {
+            get {
+                object obj = ResourceManager.GetObject("leaf", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
+        /// </summary>
         internal static System.Drawing.Bitmap zone {
             get {
                 object obj = ResourceManager.GetObject("zone", resourceCulture);

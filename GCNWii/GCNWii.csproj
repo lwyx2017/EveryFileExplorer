@@ -68,6 +68,10 @@
   <ItemGroup>
     <Compile Include="GPU\Textures.cs" />
     <Compile Include="JSystem\BTI.cs" />
+    <Compile Include="JSystem\THP\THP.cs" />
+    <Compile Include="NintendoWare\FONT\RFNT.cs" />
+    <Compile Include="NintendoWare\LYT\RLAN.cs" />
+    <Compile Include="NintendoWare\LYT\RLYT.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="JSystem\RARC.cs" />
     <Compile Include="Resource.Designer.cs">
@@ -133,6 +137,9 @@
     <Folder Include="JSystem\J2D\" />
     <Folder Include="JSystem\J3D\" />
     <Folder Include="JSystem\JAS\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\zone.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
