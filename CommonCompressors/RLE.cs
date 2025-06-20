@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using LibEveryFileExplorer.Compression;
+using LibEveryFileExplorer.IO;
 
 namespace CommonCompressors
 {
@@ -88,24 +89,25 @@ namespace CommonCompressors
 
             byte[] result = new byte[compressedData.Count + 4];
             result[0] = 0x30;
-            result[1] = (byte)(Data.Length & 0xFF);
-            result[2] = (byte)((Data.Length >> 8) & 0xFF);
-            result[3] = (byte)((Data.Length >> 16) & 0xFF);
+            IOUtil.WriteU24LE(result, 1, (uint)Data.Length);
             Array.Copy(compressedData.ToArray(), 0, result, 4, compressedData.Count);
-
             return result;
         }
 
         public override byte[] Decompress(byte[] Data)
         {
-            int decompressedSize = Data[1] | (Data[2] << 8) | (Data[3] << 16);
-            if (decompressedSize == 0 && Data.Length >= 8)
+            uint decompressedSizeUint = IOUtil.ReadU24LE(Data, 1);
+            int headerSize = 4;
+
+            if (decompressedSizeUint == 0 && Data.Length >= 8)
             {
-                decompressedSize = Data[4] | (Data[5] << 8) | (Data[6] << 16) | (Data[7] << 24);
+                decompressedSizeUint = IOUtil.ReadU32LE(Data, 4);
+                headerSize = 8;
             }
 
+            int decompressedSize = (int)decompressedSizeUint;
             byte[] result = new byte[decompressedSize];
-            int srcIndex = decompressedSize == 0 ? 8 : 4;
+            int srcIndex = headerSize;
             int dstIndex = 0;
 
             while (dstIndex < decompressedSize)
@@ -117,9 +119,9 @@ namespace CommonCompressors
                 if (compressed)
                 {
                     byte value = Data[srcIndex++];
-                    for (int i = 0; i < length; i++)
+                    int writeLength = Math.Min(length, decompressedSize - dstIndex);
+                    for (int i = 0; i < writeLength; i++)
                     {
-                        if (dstIndex >= result.Length) break;
                         result[dstIndex++] = value;
                     }
                 }
@@ -134,6 +136,7 @@ namespace CommonCompressors
 
             return result;
         }
+
 
         public class RLEIdentifier : CompressionFormatIdentifier
         {
