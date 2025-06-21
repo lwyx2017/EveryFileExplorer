@@ -59,7 +59,7 @@ namespace WiiU.GPU
             BC5 = 25
         }
 
-        private static readonly int[] Bpp = { 32, 24, 16, 16, 16, 16, 16, 8, 8, 8, 4, 4, 4, 8 };
+        private static readonly int[] Bpp = { 32, 32, 32, 24, 16, 16, 16, 16, 16, 16, 8, 8, 8, 4, 4, 4, 8, 4, 4, 8, 8, 8, 8, 4, 4, 8 };
 
         private static readonly int[] TileOrder =
         {
@@ -115,7 +115,7 @@ namespace WiiU.GPU
                     {
                         for (int x = 0; x < Width; x++)
                         {
-                            if (offs + 2 > Data.Length) break;
+                            if (x >= physicalwidth) continue;
                             if (y >= physicalheight) continue;
                             res[y * stride + x] =
                                 GFXUtil.ConvertColorFormat(
@@ -131,7 +131,7 @@ namespace WiiU.GPU
                     {
                         for (int x = 0; x < Width; x++)
                         {
-                            if (offs + 2 > Data.Length) break;
+                            if (x >= physicalwidth) continue;
                             if (y >= physicalheight) continue;
                             res[y * stride + x] =
                                 GFXUtil.ConvertColorFormat(
@@ -147,7 +147,7 @@ namespace WiiU.GPU
                     {
                         for (int x = 0; x < Width; x++)
                         {
-                            if (offs + 2 > Data.Length) break;
+                            if (x >= physicalwidth) continue;
                             if (y >= physicalheight) continue;
                             res[y * stride + x] =
                                 GFXUtil.ConvertColorFormat(
@@ -163,7 +163,7 @@ namespace WiiU.GPU
                     {
                         for (int x = 0; x < Width; x++)
                         {
-                            if (offs + 2 > Data.Length) break;
+                            if (x >= physicalwidth) continue;
                             if (y >= physicalheight) continue;
                             res[y * stride + x] =
                                 GFXUtil.ConvertColorFormat(
@@ -179,7 +179,7 @@ namespace WiiU.GPU
                     {
                         for (int x = 0; x < Width; x++)
                         {
-                            if (offs + 2 > Data.Length) break;
+                            if (x >= physicalwidth) continue;
                             if (y >= physicalheight) continue;
                             res[y * stride + x] =
                                 GFXUtil.ConvertColorFormat(
@@ -195,7 +195,7 @@ namespace WiiU.GPU
                     {
                         for (int x = 0; x < Width; x++)
                         {
-                            if (offs + 2 > Data.Length) break;
+                            if (x >= physicalwidth) continue;
                             if (y >= physicalheight) continue;
                             res[y * stride + x] =
                                 GFXUtil.ConvertColorFormat(
@@ -211,7 +211,7 @@ namespace WiiU.GPU
                     {
                         for (int x = 0; x < Width; x++)
                         {
-                            if (offs + 2 > Data.Length) break;
+                            if (x >= physicalwidth) continue;
                             if (y >= physicalheight) continue;
                             res[y * stride + x] =
                                 GFXUtil.ConvertColorFormat(
@@ -227,7 +227,7 @@ namespace WiiU.GPU
                     {
                         for (int x = 0; x < Width; x++)
                         {
-                            if (offs + 2 > Data.Length) break;
+                            if (x >= physicalwidth) continue;
                             if (y >= physicalheight) continue;
                             res[y * stride + x] =
                                 GFXUtil.ConvertColorFormat(
