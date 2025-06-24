@@ -168,7 +168,7 @@ namespace CommonCompressors
 
             public override bool IsFormat(byte[] Data)
             {
-                return Data.Length > 4 && (Data[0] & 0xF0) == 0x10;
+                return Data.Length > 4 && Data[0] == 0x10;
             }
         }
     }
