@@ -66,10 +66,6 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Tao.DevIl, Version=1.6.8.3, Culture=neutral, PublicKeyToken=7ec4053013524957, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\MKDS Course Modifier\MKDS Course Modifier\bin\x86\Debug_new\Tao.DevIl.dll</HintPath>
-    </Reference>
     <Reference Include="Tao.OpenGl">
       <HintPath>..\Libraries\Tao.OpenGl.dll</HintPath>
     </Reference>
@@ -345,7 +341,10 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "$(SolutionDir)\EveryFileExplorer\bin\Debug\Plugins\$(TargetFileName)"</PostBuildEvent>
+    <PostBuildEvent>if not exist "$(SolutionDir)EveryFileExplorer\bin\$(Configuration)\Plugins" (
+  mkdir "$(SolutionDir)EveryFileExplorer\bin\$(Configuration)\Plugins"
+)
+copy /Y "$(TargetPath)" "$(SolutionDir)EveryFileExplorer\bin\$(Configuration)\Plugins\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
