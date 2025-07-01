@@ -3,15 +3,21 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
-using LibEveryFileExplorer.Files;
-using LibEveryFileExplorer.IO;
 using GCNWii.GPU;
 using GCNWii.UI;
+using LibEveryFileExplorer.Files;
+using LibEveryFileExplorer.IO;
 
 namespace GCNWii.NintendoWare.LYT
 {
-    public class TPL : FileFormat<TPL.TPLIdentifier>, IViewable, IConvertable, IWriteable
+    public class TPL : FileFormat<TPL.TPLIdentifier>, IViewable, IWriteable, IFileCreatable//, IConvertable
     {
+        public TPL()
+        {
+            Header = new TPLHeader();
+            Textures = new[] {new TPLTexture()};
+        }
+
         public TPL(byte[] Data)
         {
             EndianBinaryReader er = new EndianBinaryReader(new MemoryStream(Data), Endianness.BigEndian);
@@ -131,9 +137,57 @@ namespace GCNWii.NintendoWare.LYT
             return true;
         }
 
+        public bool CreateFromFile()
+        {
+            OpenFileDialog f = new OpenFileDialog();
+            f.Filter = "PNG Files (*.png)|*.png";
+            if (f.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(f.FileName))
+            {
+                Bitmap bmp = new Bitmap(Image.FromStream(new MemoryStream(File.ReadAllBytes(f.FileName))));
+                Header = new TPLHeader();
+                Textures = new TPLTexture[1];
+                byte[] textureData = null;
+                byte[] paletteData = null;
+                GPU.Textures.FromBitmap(
+                    bmp,
+                    ref textureData,
+                    ref paletteData,
+                    bmp.Width,
+                    bmp.Height,
+                    GPU.Textures.ImageFormat.RGB565,
+                    GPU.Textures.PaletteFormat.RGB565
+                );
+
+                var textureHeader = new TPLTexture.TPLTextureHeader
+                {
+                    Height = (ushort)bmp.Height,
+                    Width = (ushort)bmp.Width,
+                    TextureFormat = GPU.Textures.ImageFormat.RGB565,
+                };
+
+                Textures[0] = new TPLTexture
+                {
+                    TextureHeader = textureHeader,
+                    TextureData = textureData,
+                    PaletteHeader = null,
+                    PaletteData = null
+                };
+
+                bmp.Dispose();
+                return true;
+            }
+            return false;
+        }
+
         public TPLHeader Header;
         public class TPLHeader
         {
+            public TPLHeader()
+            {
+                Signature = Signature = new byte[] { 0x00, 0x20, 0xAF, 0x30 };
+                NrTextures = 1;
+                HeaderSize = 0x0C;
+            }
             public TPLHeader(EndianBinaryReader er)
             {
                 Signature = er.ReadBytes(4);
@@ -156,6 +210,15 @@ namespace GCNWii.NintendoWare.LYT
         public TPLTexture[] Textures;
         public class TPLTexture
         {
+            public TPLTexture()
+            {
+                TextureHeader = new TPLTextureHeader();
+                PaletteHeader = null;
+                TextureData = new byte[0];
+                PaletteData = null;
+                TextureHeaderOffset = 0;
+                PaletteHeaderOffset = 0;
+            }
             public TPLTexture(EndianBinaryReader er)
             {
                 TextureHeaderOffset = er.ReadUInt32();
@@ -186,6 +249,18 @@ namespace GCNWii.NintendoWare.LYT
             public TPLTextureHeader TextureHeader;
             public class TPLTextureHeader
             {
+                public TPLTextureHeader()
+                {
+                    WrapS = 0;
+                    WrapT = 0;
+                    MinFilter = 0;
+                    MagFilter = 0;
+                    LodBias = 0;
+                    EdgeLod = 0;
+                    MinLod = 0;
+                    MaxLod = 0;
+                    Padding = 0;
+                }
                 public TPLTextureHeader(EndianBinaryReader er)
                 {
                     Height = er.ReadUInt16();
