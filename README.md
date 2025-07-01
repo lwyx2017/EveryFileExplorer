@@ -17,11 +17,19 @@ This is personal test experimental project, not an official version, For reliabl
 The project has been migrated to .NET Framework 4.8, The solution already Add Reference the required libraries and can be opened and compiled directly in Visual Studio 2022.
 
 ### Credits
-I will thanks to the creators of these open-source projects, Because I reference to some of their implementation specifications, To attempt to implement similar functionality in EFE
+I will thanks to the creators of these open-source projects, Because I reference to some of their implementation specifications, To attempt to implement similar functionality in EFE.
+
 Kuriimu (IcySon55) https://github.com/IcySon55/Kuriimu
+
 Switch-Toolbox (KillzXGaming) https://github.com/KillzXGaming/Switch-Toolbox
+
 Tinke (pleoNeX) https://github.com/pleonex/tinke
+
 DolphinTextureExtraction-tool (Venomalia) https://github.com/Venomalia/DolphinTextureExtraction-tool
 
+WiiLayoutEditor (Gericom) https://github.com/Gericom/WiiLayoutEditor
+
+MKDS Course Modifier (Gericom) The author of this project has not released Github, only a compressed file has been released.
+
 ### Special Thanks
-Gericom is undoubtedly the original author of EveryFileExplorer. Additionally, I have referred to the source code of his other tools, such as MKDS Course Modifier and WiiLayoutEditor.
+Gericom is undoubtedly the original author of EveryFileExplorer, I am only making improvements based on his foundation, and this program copyright belongs mainly to him.
