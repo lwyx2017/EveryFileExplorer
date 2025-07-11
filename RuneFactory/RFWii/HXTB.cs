@@ -9,7 +9,7 @@ using RuneFactory.UI;
 using LibEveryFileExplorer.Files;
 using LibEveryFileExplorer.IO;
 
-namespace RuneFactory
+namespace RuneFactory.RFWii
 {
     public class HXTB:FileFormat<HXTB.HXTBIdentifier>,IViewable//, IConvertable
     {
