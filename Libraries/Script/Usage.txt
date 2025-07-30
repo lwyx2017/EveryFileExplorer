@@ -1,0 +1,8 @@
+Actually, the original author of EFE has already implemented batch conversion capabilities for certain file types. For example, CGFX batch export to OBJ format was previously available, though it was implemented through scripting, which most users might not be familiar with. Let me explain how to use this feature.
+Taking the batch export of BCMDL files as an example, the original author has already implemented this functionality, and I have made some improvements to the export script.
+Open the EFE Command Prompt within the software, and enter the following command:
+EveryFileExplorer.exe "path_to_efesc_script" "source_directory_for_conversion" "target_directory_for_output"
+For instance, if you place the efesc script in the Script folder, and the D:\CGFX directory contains the BCMDL files to be exported, with the target directory being D:\OBJ for output files:
+EveryFileExplorer.exe Script\CGFX.efesc D:\CGFX D:\OBJ
+After executing this command, the CGFX models and their corresponding textures will be extracted into the OBJ directory.
+In the future, if capabilities allow, batch export functions for additional formats may be added along with their corresponding scripts.

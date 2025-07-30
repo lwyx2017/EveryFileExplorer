@@ -1,0 +1,37 @@
+int successCount = 0;
+int errorCount = 0;
+
+if (!Directory.Exists(Args[1])) 
+{
+    Directory.CreateDirectory(Args[1]);
+}
+
+string[] supportedExtensions = {".cgfx", ".bcmdl", ".bcres",".bctex"};
+
+foreach (string extension in supportedExtensions)
+{
+    foreach (var v in Directory.EnumerateFiles(Args[0], "*" + extension, SearchOption.TopDirectoryOnly))
+    {
+        Console.WriteLine("Found " + v);
+        try
+        {
+            string outputPath = Path.Combine(Args[1], Path.GetFileNameWithoutExtension(v) + ".obj");
+            N3DS.NW4C.GFX.ToOBJ(v, 0, outputPath);
+            Console.WriteLine("Success: " + v);
+            successCount++;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("ERROR processing " + v + ": " + ex.Message);
+            Console.WriteLine("Skipping this file...");
+            errorCount++;
+        }
+    }
+}
+
+Console.WriteLine("\n\nConversion summary:");
+Console.WriteLine("Total files: " + (successCount + errorCount));
+Console.WriteLine("Successfully converted: " + successCount);
+Console.WriteLine("Failed conversions: " + errorCount);
+Console.WriteLine("\nPress any key to exit...");
+Console.ReadKey();

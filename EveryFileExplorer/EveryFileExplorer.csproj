@@ -146,7 +146,11 @@
   <PropertyGroup>
     <PreBuildEvent>set "PluginsDir=$(TargetDir)Plugins"
 if not exist "%25PluginsDir%25" mkdir "%25PluginsDir%25"
-copy /Y "$(SolutionDir)Libraries\*" "%25PluginsDir%25"</PreBuildEvent>
+copy /Y "$(SolutionDir)Libraries\*" "%25PluginsDir%25"
+
+set "ScriptDir=$(TargetDir)Script"
+if not exist "%25ScriptDir%25" mkdir "%25ScriptDir%25"
+xcopy /E /I /Y "$(SolutionDir)Libraries\Script\*" "%25ScriptDir%25"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
