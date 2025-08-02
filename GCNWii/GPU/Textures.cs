@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using LibEveryFileExplorer.IO;
 using LibEveryFileExplorer.GFX;
+using LibEveryFileExplorer.IO;
 
 namespace GCNWii.GPU
 {
@@ -147,7 +147,7 @@ namespace GCNWii.GPU
                                         int posX = x + x2;
                                         byte A = TexData[offs];
                                         byte I = TexData[offs + 1];
-                                        offs += 2; 
+                                        offs += 2;
                                         if (posY >= Height || posX >= Width) continue;
                                         res[posY * stride + posX] =
                                             GFXUtil.ToColorFormat(A, I, I, I, ColorFormat.ARGB8888);
@@ -488,44 +488,407 @@ namespace GCNWii.GPU
 
         public static unsafe void FromBitmap(Bitmap bitm, ref byte[] TexData, ref byte[] PalData, int Width, int Height, ImageFormat Format, PaletteFormat PalFormat, bool ExactSize = false)
         {
-            int dataSize = GetDataSize(Format, Width, Height);
-            if (TexData == null || TexData.Length < dataSize) TexData = new byte[dataSize];
-            BitmapData d = bitm.LockBits(new Rectangle(0, 0, bitm.Width, bitm.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            uint* src = (uint*)d.Scan0;
-            int stride = d.Stride / 4;
-            int offs = 0;
-            switch (Format)
+            BitmapData d = null;
+            try
             {
-                case ImageFormat.RGB565:
-                    {
-                        for (int y = 0; y < Height; y += 4)
+                int dataSize = GetDataSize(Format, Width, Height);
+                if (TexData == null || TexData.Length < dataSize) TexData = new byte[dataSize];
+                d = bitm.LockBits(new Rectangle(0, 0, bitm.Width, bitm.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                uint* src = (uint*)d.Scan0;
+                int stride = d.Stride / 4;
+                int offs = 0;
+                switch (Format)
+                {
+                    case ImageFormat.I4:
                         {
-                            for (int x = 0; x < Width; x += 4)
+                            for (int y = 0; y < Height; y += 8)
                             {
-                                for (int y2 = 0; y2 < 4; y2++)
+                                for (int x = 0; x < Width; x += 8)
                                 {
-                                    for (int x2 = 0; x2 < 4; x2++)
+                                    for (int y2 = 0; y2 < 8; y2++)
                                     {
-                                        ushort rgb565 = 0;
-                                        if (y + y2 < bitm.Height && x + x2 < bitm.Width)
+                                        for (int x2 = 0; x2 < 8; x2 += 2)
                                         {
-                                            uint argb = src[(y + y2) * stride + x + x2];
-                                            rgb565 = (ushort)GFXUtil.ConvertColorFormat(argb,
-                                                ColorFormat.ARGB8888,
-                                                ColorFormat.RGB565
-                                            );
+                                            byte I1 = 0;
+                                            byte I2 = 0;
+                                            int posY = y + y2;
+                                            int posX1 = x + x2;
+                                            if (posY < Height && posX1 < Width)
+                                            {
+                                                uint argb = src[posY * stride + posX1];
+                                                byte r = (byte)((argb >> 16) & 0xFF);
+                                                byte g = (byte)((argb >> 8) & 0xFF);
+                                                byte b = (byte)(argb & 0xFF);
+                                                I1 = (byte)((r + g + b) / 3);
+                                            }
+                                            int posX2 = x + x2 + 1;
+                                            if (posY < Height && posX2 < Width)
+                                            {
+                                                uint argb = src[posY * stride + posX2];
+                                                byte r = (byte)((argb >> 16) & 0xFF);
+                                                byte g = (byte)((argb >> 8) & 0xFF);
+                                                byte b = (byte)(argb & 0xFF);
+                                                I2 = (byte)((r + g + b) / 3);
+                                            }
+                                            byte pixel = (byte)((((I1 * 15 + 127) / 255) << 4) | ((I2 * 15 + 127) / 255));
+                                            TexData[offs++] = pixel;
                                         }
-                                        IOUtil.WriteU16BE(TexData, offs, rgb565);
-                                        offs += 2;
                                     }
                                 }
                             }
+                            break;
                         }
-                        break;
-                    }
-                default:
-                    throw new NotImplementedException("This format is not implemented yet.");
+                    case ImageFormat.I8:
+                        {
+                            for (int y = 0; y < Height; y += 4)
+                            {
+                                for (int x = 0; x < Width; x += 8)
+                                {
+                                    for (int y2 = 0; y2 < 4; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 8; x2++)
+                                        {
+                                            int posY = y + y2;
+                                            int posX = x + x2;
+                                            byte I = 0;
+                                            if (posY < Height && posX < Width)
+                                            {
+                                                uint argb = src[posY * stride + posX];
+                                                byte r = (byte)((argb >> 16) & 0xFF);
+                                                byte g = (byte)((argb >> 8) & 0xFF);
+                                                byte b = (byte)(argb & 0xFF);
+                                                I = (byte)((r + g + b) / 3);
+                                            }
+                                            TexData[offs++] = I;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    case ImageFormat.IA4:
+                        {
+                            for (int y = 0; y < Height; y += 4)
+                            {
+                                for (int x = 0; x < Width; x += 8)
+                                {
+                                    for (int y2 = 0; y2 < 4; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 8; x2++)
+                                        {
+                                            int posY = y + y2;
+                                            int posX = x + x2;
+                                            byte data = 0;
+                                            if (posY < Height && posX < Width)
+                                            {
+                                                uint argb = src[posY * stride + posX];
+                                                byte a = (byte)((argb >> 24) & 0xFF);
+                                                byte r = (byte)((argb >> 16) & 0xFF);
+                                                byte g = (byte)((argb >> 8) & 0xFF);
+                                                byte b = (byte)(argb & 0xFF);
+                                                byte I = (byte)((r + g + b) / 3);
+                                                byte a4 = (byte)((a * 15 + 127) / 255);
+                                                byte I4 = (byte)((I * 15 + 127) / 255);
+                                                data = (byte)((a4 << 4) | I4);
+                                            }
+                                            TexData[offs++] = data;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    case ImageFormat.IA8:
+                        {
+                            for (int y = 0; y < Height; y += 4)
+                            {
+                                for (int x = 0; x < Width; x += 4)
+                                {
+                                    for (int y2 = 0; y2 < 4; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 4; x2++)
+                                        {
+                                            int posY = y + y2;
+                                            int posX = x + x2;
+                                            byte A = 0;
+                                            byte I = 0;
+                                            if (posY < Height && posX < Width)
+                                            {
+                                                uint argb = src[posY * stride + posX];
+                                                A = (byte)((argb >> 24) & 0xFF);
+                                                byte r = (byte)((argb >> 16) & 0xFF);
+                                                byte g = (byte)((argb >> 8) & 0xFF);
+                                                byte b = (byte)(argb & 0xFF);
+                                                I = (byte)((r + g + b) / 3);
+                                            }
+                                            TexData[offs++] = A;
+                                            TexData[offs++] = I;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    case ImageFormat.RGB565:
+                        {
+                            for (int y = 0; y < Height; y += 4)
+                            {
+                                for (int x = 0; x < Width; x += 4)
+                                {
+                                    for (int y2 = 0; y2 < 4; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 4; x2++)
+                                        {
+                                            ushort data = 0;
+                                            if (y + y2 < bitm.Height && x + x2 < bitm.Width)
+                                            {
+                                                uint argb = src[(y + y2) * stride + x + x2];
+                                                data = (ushort)GFXUtil.ConvertColorFormat(argb,
+                                                    ColorFormat.ARGB8888,
+                                                    ColorFormat.RGB565
+                                                );
+                                            }
+                                            IOUtil.WriteU16BE(TexData, offs, data);
+                                            offs += 2;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    case ImageFormat.RGB5A3:
+                        {
+                            for (int y = 0; y < Height; y += 4)
+                            {
+                                for (int x = 0; x < Width; x += 4)
+                                {
+                                    for (int y2 = 0; y2 < 4; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 4; x2++)
+                                        {
+                                            int posY = y + y2;
+                                            int posX = x + x2;
+                                            ushort data = 0;
+                                            if (posY < Height && posX < Width)
+                                            {
+                                                uint argb = src[posY * stride + posX];
+                                                byte a = (byte)((argb >> 24) & 0xFF);
+                                                if (a > 0xDA)
+                                                {
+                                                    data = (ushort)GFXUtil.ConvertColorFormat(
+                                                    argb,ColorFormat.ARGB8888,ColorFormat.XRGB1555);
+                                                    data |= 0x8000;
+                                                }
+                                                else
+                                                {
+                                                    data = (ushort)GFXUtil.ConvertColorFormat(
+                                                    argb,ColorFormat.ARGB8888,ColorFormat.ARGB3444);
+                                                }
+                                            }
+                                            IOUtil.WriteU16BE(TexData, offs, data);
+                                            offs += 2;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    case ImageFormat.RGBA32:
+                        {
+                            for (int y = 0; y < Height; y += 4)
+                            {
+                                for (int x = 0; x < Width; x += 4)
+                                {
+                                    for (int y2 = 0; y2 < 4; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 4; x2++)
+                                        {
+                                            int posY = y + y2;
+                                            int posX = x + x2;
+                                            ushort ar = 0;
+
+                                            if (posY < Height && posX < Width)
+                                            {
+                                                uint argb = src[posY * stride + posX];
+                                                byte a = (byte)((argb >> 24) & 0xFF);
+                                                byte r = (byte)((argb >> 16) & 0xFF);
+                                                ar = (ushort)((a << 8) | r);
+                                            }
+                                            IOUtil.WriteU16BE(TexData, offs, ar);
+                                            offs += 2;
+                                        }
+                                    }
+                                    for (int y2 = 0; y2 < 4; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 4; x2++)
+                                        {
+                                            int posY = y + y2;
+                                            int posX = x + x2;
+                                            ushort gb = 0;
+
+                                            if (posY < Height && posX < Width)
+                                            {
+                                                uint argb = src[posY * stride + posX];
+                                                byte g = (byte)((argb >> 8) & 0xFF);
+                                                byte b = (byte)(argb & 0xFF);
+                                                gb = (ushort)((g << 8) | b);
+                                            }
+                                            IOUtil.WriteU16BE(TexData, offs, gb);
+                                            offs += 2;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    case ImageFormat.CMPR:
+                        {
+                            for (int y = 0; y < Height; y += 8)
+                            {
+                                for (int x = 0; x < Width; x += 8)
+                                {
+                                    for (int y2 = 0; y2 < 8; y2 += 4)
+                                    {
+                                        for (int x2 = 0; x2 < 8; x2 += 4)
+                                        {
+                                            uint[] blockPixels = new uint[16];
+                                            int idx = 0;
+                                            for (int y3 = 0; y3 < 4; y3++)
+                                            {
+                                                int posY = y + y2 + y3;
+                                                for (int x3 = 0; x3 < 4; x3++)
+                                                {
+                                                    int posX = x + x2 + x3;
+                                                    blockPixels[idx++] = (posX < Width && posY < Height)
+                                                        ? src[posY * stride + posX]: 0;
+                                                }
+                                            }
+
+                                            int transparentCount = 0;
+                                            foreach (uint pixel in blockPixels)
+                                            {
+                                                if ((pixel >> 24) < 128) transparentCount++;
+                                            }
+                                            bool useTransparentMode = transparentCount > 12;
+
+                                            ushort color0 = 0, color1 = 0;
+                                            uint minColor = 0xFFFFFFFF, maxColor = 0;
+                                            foreach (uint pixel in blockPixels)
+                                            {
+                                                if ((pixel >> 24) == 0) continue;
+                                                if (pixel < minColor) minColor = pixel;
+                                                if (pixel > maxColor) maxColor = pixel;
+                                            }
+
+                                            if (minColor == 0xFFFFFFFF)
+                                            {
+                                                minColor = maxColor = 0;
+                                            }
+
+                                            color0 = (ushort)GFXUtil.ConvertColorFormat(minColor, ColorFormat.ARGB8888, ColorFormat.RGB565);
+                                            color1 = (ushort)GFXUtil.ConvertColorFormat(maxColor, ColorFormat.ARGB8888, ColorFormat.RGB565);
+
+                                            if (useTransparentMode)
+                                            {
+                                                if (color0 > color1) (color0, color1) = (color1, color0);
+                                            }
+                                            else if (color0 < color1)
+                                            {
+                                                (color0, color1) = (color1, color0);
+                                            }
+
+                                            uint[] palette = new uint[4];
+                                            palette[0] = GFXUtil.ConvertColorFormat(color0, ColorFormat.RGB565, ColorFormat.ARGB8888);
+                                            palette[1] = GFXUtil.ConvertColorFormat(color1, ColorFormat.RGB565, ColorFormat.ARGB8888);
+
+                                            void Unpack(uint color, out byte r, out byte g, out byte b)
+                                            {
+                                                r = (byte)((color >> 16) & 0xFF);
+                                                g = (byte)((color >> 8) & 0xFF);
+                                                b = (byte)(color & 0xFF);
+                                            }
+
+                                            Unpack(palette[0], out byte r0, out byte g0, out byte b0);
+                                            Unpack(palette[1], out byte r1, out byte g1, out byte b1);
+
+                                            if (color0 > color1)
+                                            {
+                                                palette[2] = GFXUtil.ToColorFormat(
+                                                    (2 * r0 + r1) / 3,
+                                                    (2 * g0 + g1) / 3,
+                                                    (2 * b0 + b1) / 3,
+                                                    ColorFormat.ARGB8888
+                                                );
+                                                palette[3] = GFXUtil.ToColorFormat(
+                                                    (r0 + 2 * r1) / 3,
+                                                    (g0 + 2 * g1) / 3,
+                                                    (b0 + 2 * b1) / 3,
+                                                    ColorFormat.ARGB8888
+                                                );
+                                            }
+                                            else
+                                            {
+                                                palette[2] = GFXUtil.ToColorFormat(
+                                                    (r0 + r1) / 2,
+                                                    (g0 + g1) / 2,
+                                                    (b0 + b1) / 2,
+                                                    ColorFormat.ARGB8888
+                                                );
+                                                palette[3] = 0;
+                                            }
+                                            uint indices = 0;
+                                            for (int i = 0; i < 16; i++)
+                                            {
+                                                uint pixel = blockPixels[i];
+                                                byte bestIndex = 0;
+                                                if (useTransparentMode && (pixel >> 24) < 128)
+                                                {
+                                                    bestIndex = 3;
+                                                }
+                                                else
+                                                {
+                                                    double minDist = double.MaxValue;
+                                                    for (byte j = 0; j < 4; j++)
+                                                    {
+                                                        if (palette[j] == 0 && j == 3) continue;
+
+                                                        double dist = ColorDistance(pixel, palette[j]);
+                                                        if (dist < minDist)
+                                                        {
+                                                            minDist = dist;
+                                                            bestIndex = j;
+                                                        }
+                                                    }
+                                                }
+                                                indices = (indices << 2) | bestIndex;
+                                            }
+                                            IOUtil.WriteU16BE(TexData, offs, color0);
+                                            IOUtil.WriteU16BE(TexData, offs + 2, color1);
+                                            IOUtil.WriteU32BE(TexData, offs + 4, indices);
+                                            offs += 8;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    default:
+                        throw new NotImplementedException("This format is not implemented yet.");
+                }
             }
+            finally
+            {
+                if (d != null)
+                    bitm.UnlockBits(d);
+            }
+        }
+
+        private static double ColorDistance(uint c1, uint c2)
+        {
+            int dr = (int)((c1 >> 16) & 0xFF) - (int)((c2 >> 16) & 0xFF);
+            int dg = (int)((c1 >> 8) & 0xFF) - (int)((c2 >> 8) & 0xFF);
+            int db = (int)(c1 & 0xFF) - (int)(c2 & 0xFF);
+            return dr * dr + dg * dg + db * db;
         }
     }
 }
