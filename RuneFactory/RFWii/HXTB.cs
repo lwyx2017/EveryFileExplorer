@@ -11,7 +11,7 @@ using LibEveryFileExplorer.IO;
 
 namespace RuneFactory.RFWii
 {
-    public class HXTB:FileFormat<HXTB.HXTBIdentifier>,IViewable//, IConvertable
+    public class HXTB:FileFormat<HXTB.HXTBIdentifier>,IViewable, IWriteable, IConvertable
     {
         public List<HXTBTextureEntry> Textures { get; private set; }
 
@@ -38,7 +38,6 @@ namespace RuneFactory.RFWii
                     {
                         er.BaseStream.Position = nameTable.PaletteHeaderOffset;
                         palHeader = new HTXBPaletteHeader(er);
-
                         er.BaseStream.Position = palHeader.PaletteDataOffset;
                         palData = er.ReadBytes((int)palHeader.DataSize);
                     }
@@ -48,7 +47,9 @@ namespace RuneFactory.RFWii
                         texHeader,
                         texData,
                         palHeader,
-                        palData
+                        palData,
+                        nameTable.HashValue,
+                        nameTable.Unknown
                     ));
                 }
             }
@@ -61,6 +62,75 @@ namespace RuneFactory.RFWii
         public Form GetDialog()
         {
             return new HXTBViewer(this);
+        }
+
+        public string GetSaveDefaultFileFilter()
+        {
+            return "Rune Factory Wii Textures (*.hxtb)|*.hxtb";
+        }
+
+        public byte[] Write()
+        {
+            Header.NameTableOffset = 0x20;
+            Header.FileCount = (uint)Textures.Count;
+            uint nameTableSize = (uint)(0x20 * Textures.Count);
+            uint headerSectionStart = 0x20 + nameTableSize;
+            uint currentDataOffset = headerSectionStart;
+            foreach (var tex in Textures)
+            {
+                currentDataOffset += 16;
+                if (tex.PaletteHeader != null) currentDataOffset += 16;
+            }
+            List<FileNameTable> nameTables = new List<FileNameTable>();
+            uint currentHeaderOffset = headerSectionStart;
+            for (int i = 0; i < Textures.Count; i++)
+            {
+                var tex = Textures[i];
+                tex.TextureHeader.DataSize = (uint)tex.TextureData.Length;
+                tex.TextureHeader.TextureDataOffset = currentDataOffset;
+                currentDataOffset += tex.TextureHeader.DataSize;
+                if (tex.PaletteHeader != null)
+                {
+                    tex.PaletteHeader.DataSize = (uint)tex.PaletteData.Length;
+                    tex.PaletteHeader.PaletteDataOffset = currentDataOffset;
+                    currentDataOffset += tex.PaletteHeader.DataSize;
+                }
+                FileNameTable nt = new FileNameTable();
+                nt.TexturesName = tex.Name.PadRight(16, '\0').Substring(0, 16);
+                nt.HashValue = tex.HashValue;
+                nt.TextureHeaderOffset = currentHeaderOffset;
+                currentHeaderOffset += 16;
+                if (tex.PaletteHeader != null)
+                {
+                    nt.PaletteHeaderOffset = currentHeaderOffset;
+                    currentHeaderOffset += 16;
+                }
+                else
+                {
+                    nt.PaletteHeaderOffset = 0;
+                }
+                nt.Unknown = tex.Unknown;
+                nameTables.Add(nt);
+            }
+            MemoryStream m = new MemoryStream();
+            EndianBinaryWriter er = new EndianBinaryWriter(m, Endianness.BigEndian);
+            Header.Write(er);
+            er.Write(new byte[16], 0, 16);
+            foreach (var nt in nameTables) nt.Write(er);
+            foreach (var tex in Textures)
+            {
+                tex.TextureHeader.Write(er);
+                if (tex.PaletteHeader != null) tex.PaletteHeader.Write(er);
+            }
+            foreach (var tex in Textures)
+            {
+                er.Write(tex.TextureData);
+                if (tex.PaletteData != null) er.Write(tex.PaletteData);
+            }
+
+            byte[] result = m.ToArray();
+            er.Close();
+            return result;
         }
 
         public string GetConversionFileFilters()
@@ -87,6 +157,13 @@ namespace RuneFactory.RFWii
                 FileCount = er.ReadUInt32();
 
             }
+            public void Write(EndianBinaryWriter er)
+            {
+                er.Write(Signature, Encoding.ASCII, false);
+                er.Write(Version, Encoding.ASCII, false);
+                er.Write(NameTableOffset);
+                er.Write(FileCount);
+            }
             public String Signature;
             public String Version;
             public UInt32 NameTableOffset;
@@ -96,6 +173,10 @@ namespace RuneFactory.RFWii
         public FileNameTable NameTable;
         public class FileNameTable
         {
+            public FileNameTable() 
+            { 
+            
+            }
             public FileNameTable(EndianBinaryReaderEx er)
             {
                 TexturesName = er.ReadString(Encoding.ASCII, 16);
@@ -103,6 +184,14 @@ namespace RuneFactory.RFWii
                 TextureHeaderOffset = er.ReadUInt32();
                 PaletteHeaderOffset = er.ReadUInt32();
                 Unknown = er.ReadUInt32();
+            }
+            public void Write(EndianBinaryWriter er)
+            {
+                er.Write(TexturesName, Encoding.ASCII, false);
+                er.Write(HashValue);
+                er.Write(TextureHeaderOffset);
+                er.Write(PaletteHeaderOffset);
+                er.Write(Unknown);
             }
             public String TexturesName;
             public UInt32 HashValue;
@@ -123,6 +212,16 @@ namespace RuneFactory.RFWii
                 Width = er.ReadUInt16();
                 Height = er.ReadUInt16();
                 DataSize = er.ReadUInt32();
+            }
+            public void Write(EndianBinaryWriter er)
+            {
+                er.Write(TextureDataOffset);
+                er.Write((byte)TextureFormat);
+                er.Write(MaxLOD);
+                er.Write(Padding);
+                er.Write(Width);
+                er.Write(Height);
+                er.Write(DataSize);
             }
             public UInt32 TextureDataOffset;
             public Textures.ImageFormat TextureFormat;
@@ -148,6 +247,16 @@ namespace RuneFactory.RFWii
                 Unknown3 = er.ReadUInt16();
                 DataSize = er.ReadUInt32();
             }
+            public void Write(EndianBinaryWriter er)
+            {
+                er.Write(PaletteDataOffset);
+                er.Write((byte)PaletteFormat);
+                er.Write(Unknown1);
+                er.Write(Unknown2);
+                er.Write(ColorCount);
+                er.Write(Unknown3);
+                er.Write(DataSize);
+            }
             public UInt32 PaletteDataOffset;
             public Textures.PaletteFormat PaletteFormat;
             public byte Unknown1;
@@ -165,19 +274,20 @@ namespace RuneFactory.RFWii
             public byte[] TextureData { get; }
             public HTXBPaletteHeader PaletteHeader { get; }
             public byte[] PaletteData { get; }
+            public uint HashValue { get; }
+            public uint Unknown { get; }
 
-            public HXTBTextureEntry(
-                string name,
-                HTXBTextureHeader texHeader,
-                byte[] textureData,
-                HTXBPaletteHeader paletteHeader,
-                byte[] paletteData)
+            public HXTBTextureEntry(string name, HTXBTextureHeader texHeader,
+                byte[] textureData, HTXBPaletteHeader paletteHeader,
+                byte[] paletteData, uint hashValue, uint unknown)
             {
                 Name = name;
                 TextureHeader = texHeader;
                 TextureData = textureData;
                 PaletteHeader = paletteHeader;
                 PaletteData = paletteData;
+                HashValue = hashValue;
+                Unknown = unknown;
             }
 
             public Bitmap ToBitmap()
