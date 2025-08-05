@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Linq;
 using LibEveryFileExplorer.GFX;
 using LibEveryFileExplorer.IO;
 
@@ -353,37 +355,52 @@ namespace GCNWii.GPU
                                     {
                                         int posX = x + x2;
                                         int posY = y + y2;
+
+                                        if (posY >= Height || posX >= Width)
+                                        {
+                                            offs++;
+                                            continue;
+                                        }
+
                                         byte index = TexData[offs];
                                         offs++;
-                                        if (posY >= Height || posX >= Width) continue;
-                                        ushort palColor = IOUtil.ReadU16BE(PalData, PalOffset + index * 2);
-                                        uint argb;
-                                        switch (PalFormat)
+
+                                        if (PalData != null && PalOffset + index * 2 + 1 < PalData.Length)
                                         {
-                                            case PaletteFormat.IA8:
-                                                {
-                                                    byte I = (byte)(palColor & 0xFF);
-                                                    byte A = (byte)(palColor >> 8);
-                                                    argb = GFXUtil.ToColorFormat(A, I, I, I, ColorFormat.ARGB8888);
-                                                    break;
-                                                }
-                                            case PaletteFormat.RGB565:
-                                                {
-                                                    argb = GFXUtil.ConvertColorFormat(palColor, ColorFormat.RGB565, ColorFormat.ARGB8888);
-                                                    break;
-                                                }
-                                            case PaletteFormat.RGB5A3:
-                                                {
-                                                    if ((palColor & 0x8000) != 0)
-                                                        argb = GFXUtil.ConvertColorFormat(palColor, ColorFormat.XRGB1555, ColorFormat.ARGB8888);
-                                                    else
-                                                        argb = GFXUtil.ConvertColorFormat(palColor, ColorFormat.ARGB3444, ColorFormat.ARGB8888);
-                                                    break;
-                                                }
-                                            default:
-                                                throw new Exception("Unsupported Palette Format!");
+                                            ushort palColor = IOUtil.ReadU16BE(PalData, PalOffset + index * 2);
+                                            uint argb;
+
+                                            switch (PalFormat)
+                                            {
+                                                case PaletteFormat.IA8:
+                                                    {
+                                                        byte I = (byte)(palColor & 0xFF);
+                                                        byte A = (byte)(palColor >> 8);
+                                                        argb = GFXUtil.ToColorFormat(A, I, I, I, ColorFormat.ARGB8888);
+                                                        break;
+                                                    }
+                                                case PaletteFormat.RGB565:
+                                                    {
+                                                        argb = GFXUtil.ConvertColorFormat(palColor, ColorFormat.RGB565, ColorFormat.ARGB8888);
+                                                        break;
+                                                    }
+                                                case PaletteFormat.RGB5A3:
+                                                    {
+                                                        if ((palColor & 0x8000) != 0)
+                                                            argb = GFXUtil.ConvertColorFormat(palColor, ColorFormat.XRGB1555, ColorFormat.ARGB8888);
+                                                        else
+                                                            argb = GFXUtil.ConvertColorFormat(palColor, ColorFormat.ARGB3444, ColorFormat.ARGB8888);
+                                                        break;
+                                                    }
+                                                default:
+                                                    throw new Exception("Unsupported Palette Format!");
+                                            }
+                                            res[posY * stride + posX] = argb;
                                         }
-                                        res[(y + y2) * stride + x + x2] = argb;
+                                        else
+                                        {
+                                            res[posY * stride + posX] = 0xFF000000;
+                                        }
                                     }
                                 }
                             }
@@ -402,11 +419,19 @@ namespace GCNWii.GPU
                                     {
                                         int posX = x + x2;
                                         int posY = y + y2;
+
+                                        if (offs + 1 >= TexData.Length) continue;
+
                                         ushort indexData = IOUtil.ReadU16BE(TexData, offs);
                                         offs += 2;
                                         if (posX >= Width || posY >= Height) continue;
+
                                         ushort index = (ushort)(indexData & 0x3FFF);
-                                        ushort palColor = IOUtil.ReadU16BE(PalData, PalOffset + index * 2);
+
+                                        int palIndexOffset = PalOffset + index * 2;
+                                        if (PalData == null || palIndexOffset + 1 >= PalData.Length) continue;
+
+                                        ushort palColor = IOUtil.ReadU16BE(PalData, palIndexOffset);
                                         uint argb;
                                         switch (PalFormat)
                                         {
@@ -676,13 +701,13 @@ namespace GCNWii.GPU
                                                 if (a > 0xDA)
                                                 {
                                                     data = (ushort)GFXUtil.ConvertColorFormat(
-                                                    argb,ColorFormat.ARGB8888,ColorFormat.XRGB1555);
+                                                    argb, ColorFormat.ARGB8888, ColorFormat.XRGB1555);
                                                     data |= 0x8000;
                                                 }
                                                 else
                                                 {
                                                     data = (ushort)GFXUtil.ConvertColorFormat(
-                                                    argb,ColorFormat.ARGB8888,ColorFormat.ARGB3444);
+                                                    argb, ColorFormat.ARGB8888, ColorFormat.ARGB3444);
                                                 }
                                             }
                                             IOUtil.WriteU16BE(TexData, offs, data);
@@ -741,6 +766,412 @@ namespace GCNWii.GPU
                             }
                             break;
                         }
+                    case ImageFormat.CI4:
+                        {
+                            Dictionary<uint, int> colorCounts = new Dictionary<uint, int>();
+                            for (int y = 0; y < Height; y++)
+                            {
+                                for (int x = 0; x < Width; x++)
+                                {
+                                    uint argb = src[y * stride + x];
+                                    if (colorCounts.ContainsKey(argb)) colorCounts[argb]++;
+                                    else colorCounts.Add(argb, 1);
+                                }
+                            }
+
+                            var sortedColors = colorCounts.OrderByDescending(o => o.Value).Select(o => o.Key).Take(16).ToList();
+                            uint[] palette = new uint[16];
+                            sortedColors.CopyTo(palette, 0);
+
+                            for (int i = sortedColors.Count; i < 16; i++)
+                            {
+                                palette[i] = 0;
+                            }
+
+                            int palSize = 16 * 2;
+                            if (PalData == null || PalData.Length < palSize) PalData = new byte[palSize];
+
+                            for (int i = 0; i < 16; i++)
+                            {
+                                ushort palEntry;
+                                switch (PalFormat)
+                                {
+                                    case PaletteFormat.IA8:
+                                        byte a = (byte)((palette[i] >> 24) & 0xFF);
+                                        byte r = (byte)((palette[i] >> 16) & 0xFF);
+                                        byte g = (byte)((palette[i] >> 8) & 0xFF);
+                                        byte b = (byte)(palette[i] & 0xFF);
+                                        byte intensity = (byte)((r + g + b) / 3);
+                                        palEntry = (ushort)((a << 8) | intensity);
+                                        break;
+                                    case PaletteFormat.RGB565:
+                                        palEntry = (ushort)GFXUtil.ConvertColorFormat(
+                                            palette[i],
+                                            ColorFormat.ARGB8888,
+                                            ColorFormat.RGB565);
+                                        break;
+                                    case PaletteFormat.RGB5A3:
+                                        byte alpha = (byte)((palette[i] >> 24) & 0xFF);
+                                        if (alpha > 0xDA)
+                                        {
+                                            palEntry = (ushort)GFXUtil.ConvertColorFormat(
+                                                palette[i] | 0xFF000000,
+                                                ColorFormat.ARGB8888,
+                                                ColorFormat.XRGB1555);
+                                            palEntry |= 0x8000;
+                                        }
+                                        else
+                                        {
+                                            palEntry = (ushort)GFXUtil.ConvertColorFormat(
+                                                palette[i],
+                                                ColorFormat.ARGB8888,
+                                                ColorFormat.ARGB3444);
+                                        }
+                                        break;
+                                    default:
+                                        throw new Exception("Unsupported palette format!");
+                                }
+                                IOUtil.WriteU16BE(PalData, i * 2, palEntry);
+                            }
+
+                            uint[] optimizedPalette = new uint[16];
+                            for (int i = 0; i < 16; i++)
+                            {
+                                ushort palEntry = IOUtil.ReadU16BE(PalData, i * 2);
+                                switch (PalFormat)
+                                {
+                                    case PaletteFormat.IA8:
+                                        byte intensity = (byte)(palEntry & 0xFF);
+                                        byte alpha = (byte)(palEntry >> 8);
+                                        optimizedPalette[i] = GFXUtil.ToColorFormat(
+                                            alpha, intensity, intensity, intensity, ColorFormat.ARGB8888);
+                                        break;
+                                    case PaletteFormat.RGB565:
+                                        optimizedPalette[i] = GFXUtil.ConvertColorFormat(
+                                            palEntry, ColorFormat.RGB565, ColorFormat.ARGB8888);
+                                        break;
+                                    case PaletteFormat.RGB5A3:
+                                        if ((palEntry & 0x8000) != 0)
+                                            optimizedPalette[i] = GFXUtil.ConvertColorFormat(
+                                                palEntry, ColorFormat.XRGB1555, ColorFormat.ARGB8888);
+                                        else
+                                            optimizedPalette[i] = GFXUtil.ConvertColorFormat(
+                                                palEntry, ColorFormat.ARGB3444, ColorFormat.ARGB8888);
+                                        break;
+                                }
+                            }
+
+                            for (int y = 0; y < Height; y += 8)
+                            {
+                                for (int x = 0; x < Width; x += 8)
+                                {
+                                    for (int y2 = 0; y2 < 8; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 8; x2 += 2)
+                                        {
+                                            int posY = y + y2;
+                                            int posX1 = x + x2;
+                                            int posX2 = x + x2 + 1;
+
+                                            byte index1 = 0;
+                                            byte index2 = 0;
+
+                                            if (posY < Height)
+                                            {
+                                                if (posX1 < Width)
+                                                {
+                                                    uint color = src[posY * stride + posX1];
+                                                    index1 = FindClosestColor(color, optimizedPalette);
+                                                }
+
+                                                if (posX2 < Width)
+                                                {
+                                                    uint color = src[posY * stride + posX2];
+                                                    index2 = FindClosestColor(color, optimizedPalette);
+                                                }
+                                            }
+
+                                            TexData[offs++] = (byte)((index1 << 4) | index2);
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    case ImageFormat.CI8:
+                        {
+                            Dictionary<uint, int> colorCounts = new Dictionary<uint, int>();
+                            for (int y = 0; y < Height; y++)
+                            {
+                                for (int x = 0; x < Width; x++)
+                                {
+                                    if (y < bitm.Height && x < bitm.Width)
+                                    {
+                                        uint argb = src[y * stride + x];
+                                        if (colorCounts.ContainsKey(argb))
+                                            colorCounts[argb]++;
+                                        else
+                                            colorCounts.Add(argb, 1);
+                                    }
+                                }
+                            }
+
+                            var sortedColors = colorCounts.OrderByDescending(o => o.Value)
+                                .Select(o => o.Key)
+                                .Take(256)
+                                .ToList();
+
+                            uint[] palette = new uint[256];
+                            for (int i = 0; i < sortedColors.Count && i < 256; i++)
+                            {
+                                palette[i] = sortedColors[i];
+                            }
+
+                            for (int i = sortedColors.Count; i < 256; i++)
+                            {
+                                palette[i] = 0;
+                            }
+
+                            int palSize = 256 * 2;
+                            if (PalData == null || PalData.Length < palSize)
+                                PalData = new byte[palSize];
+
+                            for (int i = 0; i < 256; i++)
+                            {
+                                ushort palEntry;
+                                switch (PalFormat)
+                                {
+                                    case PaletteFormat.IA8:
+                                        byte a = (byte)((palette[i] >> 24) & 0xFF);
+                                        byte r = (byte)((palette[i] >> 16) & 0xFF);
+                                        byte g = (byte)((palette[i] >> 8) & 0xFF);
+                                        byte b = (byte)(palette[i] & 0xFF);
+                                        byte intensity = (byte)((r + g + b) / 3);
+                                        palEntry = (ushort)((a << 8) | intensity);
+                                        break;
+
+                                    case PaletteFormat.RGB565:
+                                        palEntry = (ushort)GFXUtil.ConvertColorFormat(
+                                            palette[i],
+                                            ColorFormat.ARGB8888,
+                                            ColorFormat.RGB565);
+                                        break;
+
+                                    case PaletteFormat.RGB5A3:
+                                        byte alpha = (byte)((palette[i] >> 24) & 0xFF);
+                                        if (alpha > 0xDA)
+                                        {
+                                            palEntry = (ushort)GFXUtil.ConvertColorFormat(
+                                                palette[i] | 0xFF000000,
+                                                ColorFormat.ARGB8888,
+                                                ColorFormat.XRGB1555);
+                                            palEntry |= 0x8000;
+                                        }
+                                        else
+                                        {
+                                            palEntry = (ushort)GFXUtil.ConvertColorFormat(
+                                                palette[i],
+                                                ColorFormat.ARGB8888,
+                                                ColorFormat.ARGB3444);
+                                        }
+                                        break;
+
+                                    default:
+                                        throw new Exception("Unsupported palette format!");
+                                }
+                                IOUtil.WriteU16BE(PalData, i * 2, palEntry);
+                            }
+
+                            uint[] optimizedPalette = new uint[256];
+                            for (int i = 0; i < 256; i++)
+                            {
+                                if (i * 2 + 1 < PalData.Length)
+                                {
+                                    ushort palEntry = IOUtil.ReadU16BE(PalData, i * 2);
+                                    switch (PalFormat)
+                                    {
+                                        case PaletteFormat.IA8:
+                                            byte intensity = (byte)(palEntry & 0xFF);
+                                            byte alpha = (byte)(palEntry >> 8);
+                                            optimizedPalette[i] = GFXUtil.ToColorFormat(
+                                                alpha, intensity, intensity, intensity,
+                                                ColorFormat.ARGB8888);
+                                            break;
+
+                                        case PaletteFormat.RGB565:
+                                            optimizedPalette[i] = GFXUtil.ConvertColorFormat(
+                                                palEntry,
+                                                ColorFormat.RGB565,
+                                                ColorFormat.ARGB8888);
+                                            break;
+
+                                        case PaletteFormat.RGB5A3:
+                                            if ((palEntry & 0x8000) != 0)
+                                                optimizedPalette[i] = GFXUtil.ConvertColorFormat(
+                                                    palEntry,
+                                                    ColorFormat.XRGB1555,
+                                                    ColorFormat.ARGB8888);
+                                            else
+                                                optimizedPalette[i] = GFXUtil.ConvertColorFormat(
+                                                    palEntry,
+                                                    ColorFormat.ARGB3444,
+                                                    ColorFormat.ARGB8888);
+                                            break;
+                                    }
+                                }
+                                else
+                                {
+                                    optimizedPalette[i] = 0xFF000000;
+                                }
+                            }
+
+                            offs = 0;
+                            for (int y = 0; y < Height; y += 4)
+                            {
+                                for (int x = 0; x < Width; x += 8)
+                                {
+                                    for (int y2 = 0; y2 < 4; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 8; x2++)
+                                        {
+                                            int posX = x + x2;
+                                            int posY = y + y2;
+                                            byte index = 0;
+
+                                            if (posY < Height && posX < Width && posY < bitm.Height && posX < bitm.Width)
+                                            {
+                                                uint color = src[posY * stride + posX];
+                                                index = FindClosestColor(color, optimizedPalette);
+                                            }
+                                            TexData[offs++] = index;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    case ImageFormat.CI14X2:
+                        {
+                            Dictionary<uint, int> colorCounts = new Dictionary<uint, int>();
+                            for (int y = 0; y < Height; y++)
+                            {
+                                for (int x = 0; x < Width; x++)
+                                {
+                                    uint argb = src[y * stride + x];
+                                    if (colorCounts.ContainsKey(argb)) colorCounts[argb]++;
+                                    else colorCounts.Add(argb, 1);
+                                }
+                            }
+
+                            var sortedColors = colorCounts.OrderByDescending(o => o.Value)
+                            .Select(o => o.Key)
+                            .Take(16384)
+                            .ToList();
+                            uint[] palette = new uint[16384];
+                            int paletteSize = sortedColors.Count;
+                            for (int i = 0; i < paletteSize; i++)
+                                palette[i] = sortedColors[i];
+                            for (int i = paletteSize; i < 16384; i++)
+                                palette[i] = 0;
+                            int palSize = 16384 * 2;
+                            if (PalData == null || PalData.Length < palSize)
+                                PalData = new byte[palSize];
+
+                            for (int i = 0; i < 16384; i++)
+                            {
+                                ushort palEntry;
+                                switch (PalFormat)
+                                {
+                                    case PaletteFormat.IA8:
+                                        byte a = (byte)((palette[i] >> 24) & 0xFF);
+                                        byte r = (byte)((palette[i] >> 16) & 0xFF);
+                                        byte g = (byte)((palette[i] >> 8) & 0xFF);
+                                        byte b = (byte)(palette[i] & 0xFF);
+                                        byte intensity = (byte)((r + g + b) / 3);
+                                        palEntry = (ushort)((a << 8) | intensity);
+                                        break;
+                                    case PaletteFormat.RGB565:
+                                        palEntry = (ushort)GFXUtil.ConvertColorFormat(
+                                            palette[i], ColorFormat.ARGB8888, ColorFormat.RGB565);
+                                        break;
+                                    case PaletteFormat.RGB5A3:
+                                        byte alpha = (byte)((palette[i] >> 24) & 0xFF);
+                                        if (alpha > 0xDA)
+                                        {
+                                            palEntry = (ushort)GFXUtil.ConvertColorFormat(
+                                                palette[i] | 0xFF000000,
+                                                ColorFormat.ARGB8888,
+                                                ColorFormat.XRGB1555
+                                            );
+                                            palEntry |= 0x8000;
+                                        }
+                                        else
+                                        {
+                                            palEntry = (ushort)GFXUtil.ConvertColorFormat(
+                                                palette[i],
+                                                ColorFormat.ARGB8888,
+                                                ColorFormat.ARGB3444
+                                            );
+                                        }
+                                        break;
+                                    default:
+                                        throw new Exception("Unsupported palette format!");
+                                }
+                                IOUtil.WriteU16BE(PalData, i * 2, palEntry);
+                            }
+
+                            uint[] optimizedPalette = new uint[16384];
+                            for (int i = 0; i < 16384; i++)
+                            {
+                                ushort palEntry = IOUtil.ReadU16BE(PalData, i * 2);
+                                switch (PalFormat)
+                                {
+                                    case PaletteFormat.IA8:
+                                        byte intensity = (byte)(palEntry & 0xFF);
+                                        byte alpha = (byte)(palEntry >> 8);
+                                        optimizedPalette[i] = GFXUtil.ToColorFormat(
+                                            alpha, intensity, intensity, intensity, ColorFormat.ARGB8888);
+                                        break;
+                                    case PaletteFormat.RGB565:
+                                        optimizedPalette[i] = GFXUtil.ConvertColorFormat(
+                                            palEntry, ColorFormat.RGB565, ColorFormat.ARGB8888);
+                                        break;
+                                    case PaletteFormat.RGB5A3:
+                                        if ((palEntry & 0x8000) != 0)
+                                            optimizedPalette[i] = GFXUtil.ConvertColorFormat(
+                                                palEntry, ColorFormat.XRGB1555, ColorFormat.ARGB8888);
+                                        else
+                                            optimizedPalette[i] = GFXUtil.ConvertColorFormat(
+                                                palEntry, ColorFormat.ARGB3444, ColorFormat.ARGB8888);
+                                        break;
+                                }
+                            }
+
+                            for (int y = 0; y < Height; y += 4)
+                            {
+                                for (int x = 0; x < Width; x += 4)
+                                {
+                                    for (int y2 = 0; y2 < 4; y2++)
+                                    {
+                                        for (int x2 = 0; x2 < 4; x2++)
+                                        {
+                                            int posX = x + x2;
+                                            int posY = y + y2;
+                                            ushort index = 0;
+
+                                            if (posY < Height && posX < Width)
+                                            {
+                                                uint color = src[posY * stride + posX];
+                                                index = FindClosestColorInPalette(color, optimizedPalette);
+                                            }
+                                            IOUtil.WriteU16BE(TexData, offs, index);
+                                            offs += 2;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
                     case ImageFormat.CMPR:
                         {
                             for (int y = 0; y < Height; y += 8)
@@ -760,7 +1191,7 @@ namespace GCNWii.GPU
                                                 {
                                                     int posX = x + x2 + x3;
                                                     blockPixels[idx++] = (posX < Width && posY < Height)
-                                                        ? src[posY * stride + posX]: 0;
+                                                        ? src[posY * stride + posX] : 0;
                                                 }
                                             }
 
@@ -881,6 +1312,59 @@ namespace GCNWii.GPU
                 if (d != null)
                     bitm.UnlockBits(d);
             }
+        }
+
+        private static byte FindClosestColor(uint target, uint[] palette)
+        {
+            double minDistance = double.MaxValue;
+            byte bestIndex = 0;
+
+            for (byte i = 0; i < palette.Length; i++)
+            {
+                double dist = CalculateColorDistance(target, palette[i]);
+                if (dist < minDistance)
+                {
+                    minDistance = dist;
+                    bestIndex = i;
+                }
+            }
+            return bestIndex;
+        }
+
+        private static ushort FindClosestColorInPalette(uint target, uint[] palette)
+        {
+            double minDistance = double.MaxValue;
+            ushort bestIndex = 0;
+
+            for (ushort i = 0; i < palette.Length; i++)
+            {
+                double dist = CalculateColorDistance(target, palette[i]);
+                if (dist < minDistance)
+                {
+                    minDistance = dist;
+                    bestIndex = i;
+                }
+            }
+            return bestIndex;
+        }
+
+        private static double CalculateColorDistance(uint c1, uint c2)
+        {
+            int a1 = (int)((c1 >> 24) & 0xFF);
+            int r1 = (int)((c1 >> 16) & 0xFF);
+            int g1 = (int)((c1 >> 8) & 0xFF);
+            int b1 = (int)(c1 & 0xFF);
+            int a2 = (int)((c2 >> 24) & 0xFF);
+            int r2 = (int)((c2 >> 16) & 0xFF);
+            int g2 = (int)((c2 >> 8) & 0xFF);
+            int b2 = (int)(c2 & 0xFF);
+            double alphaWeight = a1 > 0 || a2 > 0 ? 0.5 : 0.1;
+            return Math.Sqrt(
+                alphaWeight * Math.Pow(a1 - a2, 2) +
+                Math.Pow(r1 - r2, 2) +
+                Math.Pow(g1 - g2, 2) +
+                Math.Pow(b1 - b2, 2)
+            );
         }
 
         private static double ColorDistance(uint c1, uint c2)
