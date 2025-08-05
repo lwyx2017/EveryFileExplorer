@@ -143,38 +143,56 @@ namespace GCNWii.NintendoWare.LYT
             f.Filter = "PNG Files (*.png)|*.png";
             if (f.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(f.FileName))
             {
-                Bitmap bmp = new Bitmap(Image.FromStream(new MemoryStream(File.ReadAllBytes(f.FileName))));
-                Header = new TPLHeader();
-                Textures = new TPLTexture[1];
-                byte[] textureData = null;
-                byte[] paletteData = null;
-                GPU.Textures.FromBitmap(
-                    bmp,
-                    ref textureData,
-                    ref paletteData,
-                    bmp.Width,
-                    bmp.Height,
-                    GPU.Textures.ImageFormat.RGB565,
-                    GPU.Textures.PaletteFormat.RGB565
-                );
-
-                var textureHeader = new TPLTexture.TPLTextureHeader
+                using (TPLGenDialog formatDialog = new TPLGenDialog())
                 {
-                    Height = (ushort)bmp.Height,
-                    Width = (ushort)bmp.Width,
-                    TextureFormat = GPU.Textures.ImageFormat.RGB565,
-                };
+                    if (formatDialog.ShowDialog() != DialogResult.OK) return false;
+                    Bitmap bmp = new Bitmap(Image.FromStream(new MemoryStream(File.ReadAllBytes(f.FileName))));
+                    Header = new TPLHeader();
+                    Textures = new TPLTexture[1];
+                    byte[] textureData = null;
+                    byte[] paletteData = null;
+                    Textures.ImageFormat texFormat = formatDialog.SelectedTextureFormat;
+                    Textures.PaletteFormat palFormat = formatDialog.SelectedPaletteFormat;
+                    GPU.Textures.FromBitmap(
+                        bmp,
+                        ref textureData,
+                        ref paletteData,
+                        bmp.Width,
+                        bmp.Height,
+                        texFormat,
+                        palFormat
+                    );
 
-                Textures[0] = new TPLTexture
-                {
-                    TextureHeader = textureHeader,
-                    TextureData = textureData,
-                    PaletteHeader = null,
-                    PaletteData = null
-                };
+                    var textureHeader = new TPLTexture.TPLTextureHeader
+                    {
+                        Height = (ushort)bmp.Height,
+                        Width = (ushort)bmp.Width,
+                        TextureFormat = texFormat,
+                    };
 
-                bmp.Dispose();
-                return true;
+                    TPLTexture.TPLPaletteHeader paletteHeader = null;
+                    if (texFormat == GCNWii.GPU.Textures.ImageFormat.CI4 ||
+                        texFormat == GCNWii.GPU.Textures.ImageFormat.CI8 ||
+                        texFormat == GCNWii.GPU.Textures.ImageFormat.CI14X2)
+                    {
+                        paletteHeader = new TPLTexture.TPLPaletteHeader
+                        {
+                            NrEntries = (ushort)(paletteData.Length / 2),
+                            PaletteFormat = palFormat
+                        };
+                    }
+
+                    Textures[0] = new TPLTexture
+                    {
+                        TextureHeader = textureHeader,
+                        TextureData = textureData,
+                        PaletteHeader = paletteHeader,
+                        PaletteData = paletteHeader == null ? null : paletteData
+                    };
+
+                    bmp.Dispose();
+                    return true;
+                }
             }
             return false;
         }
@@ -312,6 +330,10 @@ namespace GCNWii.NintendoWare.LYT
             public TPLPaletteHeader PaletteHeader;
             public class TPLPaletteHeader
             {
+                public TPLPaletteHeader() 
+                { 
+                
+                }
                 public TPLPaletteHeader(EndianBinaryReader er)
                 {
                     NrEntries = er.ReadUInt16();
