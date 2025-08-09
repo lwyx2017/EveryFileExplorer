@@ -312,8 +312,9 @@ namespace WiiU.NintendoWare.LYT2
                     case 25: fu = GPU.Textures.ImageFormat.RGB555; break;
                     default: throw new Exception("Unknown Image Format!");
 				}
-				return GPU.Textures.ToBitmap(Data, Image.Width, Image.Height, fu, (GPU.Textures.TileMode)(Image.Flag & 0x1F), (uint)Image.Flag >> 5);
-			}
+                uint Swizzle = (uint)((Image.Flag >> 5) & 7) << 8;
+                return GPU.Textures.ToBitmap(Data,Image.Width,Image.Height,fu,(GPU.Textures.TileMode)(Image.Flag & 0x1F),Swizzle);
+            }
 		}
 
 		public class FLIMIdentifier : FileFormatIdentifier
