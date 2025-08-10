@@ -19,12 +19,12 @@ namespace _3DS
 			EndianBinaryReaderEx er = new EndianBinaryReaderEx(new MemoryStream(Data), Endianness.LittleEndian);
 			try
 			{
-				Header = new SARCHeader(er);
-				SFat = new SFAT(er);
-				SFnt = new SFNT(er);
-				er.BaseStream.Position = Header.FileDataOffset;
-				this.Data = er.ReadBytes((int)(Header.FileSize - Header.FileDataOffset));
-			}
+                Header = new SARCHeader(er);
+                SFat = new SFAT(er);
+                SFnt = new SFNT(er, Header.FileDataOffset);
+                er.BaseStream.Position = Header.FileDataOffset;
+                this.Data = er.ReadBytes((int)(Header.FileSize - Header.FileDataOffset));
+            }
 			finally
 			{
 				er.Close();
@@ -153,7 +153,7 @@ namespace _3DS
 				public UInt32 FileNameOffset;//If filenames are available
 				public UInt32 FileDataStart;
 				public UInt32 FileDataEnd;
-			}
+            }
 		}
 
 		public SFNT SFnt;
@@ -165,13 +165,22 @@ namespace _3DS
 				HeaderSize = 8;
 				Unknown1 = 0;
 			}
-			public SFNT(EndianBinaryReaderEx er)
-			{
-				Signature = er.ReadString(Encoding.ASCII, 4);
-				if (Signature != "SFNT") throw new SignatureNotCorrectException(Signature, "SFNT", er.BaseStream.Position - 4);
-				HeaderSize = er.ReadUInt16();
-				Unknown1 = er.ReadUInt16();
-			}
+            public SFNT(EndianBinaryReaderEx er, uint fileDataOffset)
+            {
+                Signature = er.ReadString(Encoding.ASCII, 4);
+                if (Signature != "SFNT") throw new SignatureNotCorrectException(Signature, "SFNT", er.BaseStream.Position - 4);
+                HeaderSize = er.ReadUInt16();
+                Unknown1 = er.ReadUInt16();
+                long tableSize = fileDataOffset - er.BaseStream.Position;
+                if (tableSize > 0)
+                {
+                    StringTable = er.ReadBytes((int)tableSize);
+                }
+                else
+                {
+                    StringTable = new byte[0];
+                }
+            }
 			public void Write(EndianBinaryWriter er)
 			{
 				er.Write(Signature, Encoding.ASCII, false);
@@ -182,7 +191,8 @@ namespace _3DS
 			public String Signature;
 			public UInt16 HeaderSize;
 			public UInt16 Unknown1;
-		}
+            public byte[] StringTable;
+        }
 
 		public byte[] Data;
 
@@ -228,24 +238,86 @@ namespace _3DS
 			return res;
 		}
 
-		public SFSDirectory ToFileSystem()
-		{
-			SFSDirectory Root = new SFSDirectory("/", true);
-			foreach (var v in SFat.Entries)
-			{
-				var q = new SFSFile((int)v.FileNameHash, string.Format("0x{0:X8}", v.FileNameHash), Root);
-				if (SARCHashTable.DefaultHashTable != null)
-				{
-					var vv = SARCHashTable.DefaultHashTable.GetEntryByHash(v.FileNameHash);
-					if (vv != null) q.FileName = vv.Name;
-				}
-				q.Data = GetFileDataByHash(v.FileNameHash);
-				Root.Files.Add(q);
-			}
-			return Root;
-		}
+        public SFSDirectory ToFileSystem()
+        {
+            SFSDirectory Root = new SFSDirectory("/", true);
+            Dictionary<string, SFSDirectory> directoryMap = new Dictionary<string, SFSDirectory>();
+            directoryMap["/"] = Root;
+            foreach (var v in SFat.Entries)
+            {
+                string fullPath = null;
+                if (SFnt != null && SFnt.StringTable != null && SFnt.StringTable.Length > 0)
+                {
+                    uint nameOffset = (v.FileNameOffset & 0x00FFFFFF) * 4;
+                    if (nameOffset < SFnt.StringTable.Length)
+                    {
+                        int end = Array.IndexOf(SFnt.StringTable, (byte)0, (int)nameOffset);
+                        if (end >= 0)
+                        {
+                            fullPath = Encoding.ASCII.GetString(
+                                SFnt.StringTable,
+                                (int)nameOffset,
+                                end - (int)nameOffset
+                            );
+                        }
+                    }
+                }
 
-		public void FromFileSystem(SFSDirectory Root)
+                if (string.IsNullOrEmpty(fullPath))
+                {
+                    fullPath = string.Format("0x{0:X8}", v.FileNameHash);
+                    if (SARCHashTable.DefaultHashTable != null)
+                    {
+                        var vv = SARCHashTable.DefaultHashTable.GetEntryByHash(v.FileNameHash);
+                        if (vv != null) fullPath = vv.Name;
+                    }
+                }
+
+                string fileName = Path.GetFileName(fullPath);
+                string directoryPath = Path.GetDirectoryName(fullPath)?.Replace('\\', '/');
+
+                if (string.IsNullOrEmpty(directoryPath))
+                {
+                    directoryPath = "/";
+                }
+                else if (!directoryPath.StartsWith("/"))
+                {
+                    directoryPath = "/" + directoryPath;
+                }
+
+                if (!directoryPath.EndsWith("/")) directoryPath += "/";
+
+                SFSDirectory targetDir = Root;
+                if (directoryPath != "/")
+                {
+                    string[] pathParts = directoryPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                    string currentPath = "/";
+
+                    foreach (string part in pathParts)
+                    {
+                        currentPath += part + "/";
+
+                        if (!directoryMap.TryGetValue(currentPath, out SFSDirectory nextDir))
+                        {
+                            SFSDirectory parentDir = directoryMap[currentPath.Substring(0, currentPath.LastIndexOf('/', currentPath.Length - 2) + 1)];
+                            nextDir = new SFSDirectory(part, false)
+                            {
+                                Parent = parentDir
+                            };
+                            parentDir.SubDirectories.Add(nextDir);
+                            directoryMap[currentPath] = nextDir;
+                        }
+                        targetDir = nextDir;
+                    }
+                }
+                var file = new SFSFile((int)v.FileNameHash, fileName, targetDir);
+                file.Data = GetFileDataByHash(v.FileNameHash);
+                targetDir.Files.Add(file);
+            }
+            return Root;
+        }
+
+        public void FromFileSystem(SFSDirectory Root)
 		{
 			Header = new SARCHeader();
 			SFat = new SFAT();

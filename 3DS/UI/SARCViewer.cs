@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
+using System.IO;
 using LibEveryFileExplorer.Files.SimpleFileSystem;
 using LibEveryFileExplorer.Files;
 using LibEveryFileExplorer;
@@ -40,21 +36,32 @@ namespace _3DS.UI
 			EveryFileExplorerUtil.OpenFile(new SARCEFESFSFile(s), ((ViewableFile)Tag).File);
 		}
 
-		private void OnExport(object sender, EventArgs e)
-		{
-			var file = Root.GetFileByPath(fileBrowser1.SelectedPath);
-			if (file == null) return;
-			saveFileDialog1.Filter = "Binary File (*.bin)|*.bin|All Files (*.*)|*.*";//System.IO.Path.GetExtension(fileBrowser1.SelectedPath).Replace(".", "").ToUpper() + " Files (*" + System.IO.Path.GetExtension(fileBrowser1.SelectedPath).ToLower() + ")|*" + System.IO.Path.GetExtension(fileBrowser1.SelectedPath).ToLower() + "|All Files (*.*)|*.*";
-			saveFileDialog1.FileName = System.IO.Path.GetFileName(fileBrowser1.SelectedPath);
-			if (saveFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK
-				&& saveFileDialog1.FileName.Length > 0)
-			{
-				System.IO.File.Create(saveFileDialog1.FileName).Close();
-				System.IO.File.WriteAllBytes(saveFileDialog1.FileName, file.Data);
-			}
-		}
+        private void OnExport(object sender, EventArgs e)
+        {
+            var file = Root.GetFileByPath(fileBrowser1.SelectedPath);
+            if (file == null) return;
+            string fileName = Path.GetFileName(fileBrowser1.SelectedPath);
+            string extension = ".bin";
+            if (!fileName.StartsWith("0x"))
+            {
+                string originalExt = Path.GetExtension(fileName);
+                if (!string.IsNullOrEmpty(originalExt))
+                {
+                    extension = originalExt;
+                }
+            }
 
-		private void fileBrowser1_OnSelectionChanged(object sender, EventArgs e)
+            saveFileDialog1.Filter = $"{extension.ToUpper().TrimStart('.')} Files (*{extension})|*{extension}|All Files (*.*)|*.*";
+            saveFileDialog1.FileName = fileName;
+
+            if (saveFileDialog1.ShowDialog() == DialogResult.OK
+                && !string.IsNullOrEmpty(saveFileDialog1.FileName))
+            {
+                File.WriteAllBytes(saveFileDialog1.FileName, file.Data);
+            }
+        }
+
+        private void fileBrowser1_OnSelectionChanged(object sender, EventArgs e)
 		{
 			if (Root.GetDirectoryByPath(fileBrowser1.SelectedPath) == null) menuExport.Enabled = menuReplace.Enabled = true;
 			else menuExport.Enabled = menuReplace.Enabled = false;
