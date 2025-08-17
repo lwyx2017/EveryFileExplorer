@@ -103,7 +103,7 @@
     <Compile Include="NitroSystem\SND\SSEQ.cs" />
     <Compile Include="NitroSystem\SND\SSAR.cs" />
     <Compile Include="NitroSystem\SND\SBNK.cs" />
-    <Compile Include="SPA.cs" />
+    <Compile Include="NitroSystem\Particles\SPA.cs" />
     <Compile Include="NDSPlugin.cs" />
     <Compile Include="NDSProject.cs" />
     <Compile Include="NitroSystem\G2D\NCER.cs" />
@@ -140,6 +140,12 @@
     <Compile Include="SND\IMAADPCMDecoder.cs" />
     <Compile Include="SND\IMAADPCMConst.cs" />
     <Compile Include="SND\IMAADPCMEncoder.cs" />
+    <Compile Include="UI\SPAViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\SPAViewer.Designer.cs">
+      <DependentUpon>SPAViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\NDSProjectDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -216,6 +222,9 @@
     <EmbeddedResource Include="Resource.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SPAViewer.resx">
+      <DependentUpon>SPAViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\NDSProjectDialog.resx">
       <DependentUpon>NDSProjectDialog.cs</DependentUpon>
