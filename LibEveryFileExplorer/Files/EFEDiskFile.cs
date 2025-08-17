@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
 
 namespace LibEveryFileExplorer.Files
@@ -14,10 +11,10 @@ namespace LibEveryFileExplorer.Files
 			Data = new byte[0];
 		}
 
-		public EFEDiskFile(String Path)
-		{
-			if (!File.Exists(Path)) throw new ArgumentException("File doesn't exist!");
-			this.Path = Path;
+        public EFEDiskFile(String Path)
+        {
+            if (!File.Exists(Path))throw new ArgumentException("File doesn't exist!", nameof(Path));
+            this.Path = Path;
 			Name = System.IO.Path.GetFileName(Path);
 			PrepareDataForUse(File.ReadAllBytes(Path));
 		}
@@ -46,5 +43,10 @@ namespace LibEveryFileExplorer.Files
 			if (a.Path == Path) return true;
 			return false;
 		}
-	}
+
+        public override int GetHashCode()
+        {
+            return Path?.GetHashCode() ?? 0;
+        }
+    }
 }

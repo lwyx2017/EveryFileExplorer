@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace LibEveryFileExplorer.Files.SimpleFileSystem
+﻿namespace LibEveryFileExplorer.Files.SimpleFileSystem
 {
 	public class EFESFSFile : EFEFile
 	{
@@ -36,12 +31,17 @@ namespace LibEveryFileExplorer.Files.SimpleFileSystem
 			return null;
 		}
 
-		public override bool Equals(object obj)
-		{
-			if (!(obj is EFESFSFile)) return false;
-			EFESFSFile a = (EFESFSFile)obj;
-			if (a.File == File) return true;
-			return false;
-		}
-	}
+        public override bool Equals(object obj)
+        {
+            if (!(obj is EFESFSFile)) return false;
+            EFESFSFile a = (EFESFSFile)obj;
+            if (a.File == File) return true;
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return File?.GetHashCode() ?? 0;
+        }
+    }
 }
