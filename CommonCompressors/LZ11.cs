@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using LibEveryFileExplorer.Compression;
+using LibEveryFileExplorer.IO;
 
 namespace CommonCompressors
 {
@@ -12,7 +13,9 @@ namespace CommonCompressors
             using (var bw = new BinaryWriter(ms))
             {
                 bw.Write((byte)0x11);
-                Write24BitLittleEndian(bw, Data.Length);
+                byte[] lengthBytes = new byte[3];
+                IOUtil.WriteU24LE(lengthBytes, 0, (uint)Data.Length);
+                bw.Write(lengthBytes, 0, 3);
 
                 fixed (byte* dataPtr = Data)
                 {
@@ -118,13 +121,6 @@ namespace CommonCompressors
 
         private const int MaxWindowSize = 0x1000;
         private const int MaxMatchLength = 0x10110;
-
-        private void Write24BitLittleEndian(BinaryWriter bw, int value)
-        {
-            bw.Write((byte)(value & 0xFF));
-            bw.Write((byte)((value >> 8) & 0xFF));
-            bw.Write((byte)((value >> 16) & 0xFF));
-        }
 
         public override byte[] Decompress(byte[] Data)
         {
