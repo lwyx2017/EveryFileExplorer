@@ -91,19 +91,20 @@ namespace _3DS.UI
 			}
 		}
 
-		private void menuReplace_Click(object sender, EventArgs e)
-		{
-			if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK
-				   && openFileDialog1.FileName.Length > 0)
-			{
-				var file = Root.GetFileByPath(fileBrowser1.SelectedPath);
-				file.Data = System.IO.File.ReadAllBytes(openFileDialog1.FileName);
-				Archive.FromFileSystem(Root);
-				fileBrowser1.UpdateDirectories(Root.GetTreeNodes(), true);
-			}
-		}
+        private void menuReplace_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK
+                   && openFileDialog1.FileName.Length > 0)
+            {
+                var file = Root.GetFileByPath(fileBrowser1.SelectedPath);
+                byte[] newData = System.IO.File.ReadAllBytes(openFileDialog1.FileName);
+                file.Data = newData;
+                Archive.FromFileSystem(Root);
+                fileBrowser1.UpdateDirectories(Root.GetTreeNodes(), true);
+            }
+        }
 
-		public void OnChildSave(ViewableFile File)
+        public void OnChildSave(ViewableFile File)
 		{
 			Archive.FromFileSystem(Root);
 			fileBrowser1.UpdateDirectories(Root.GetTreeNodes(), true);
