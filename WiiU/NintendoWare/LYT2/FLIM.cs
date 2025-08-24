@@ -183,24 +183,14 @@ namespace WiiU.NintendoWare.LYT2
 			}
             public void Write(EndianBinaryWriterEx er)
             {
-                if (Endianness == 0xFFFE)
-                {
-                    er.Write(Signature, Encoding.ASCII, false);
-                    er.Write((ushort)0xFEFF);
-                    er.Write(HeaderSize);
-                    er.Write(Version);
-                    er.Write(FileSize);
-                    er.Write(NrBlocks);
-                }
-                else
-                {
-                    er.Write(Signature, Encoding.ASCII, false);
-                    er.Write(Endianness);
-                    er.Write(HeaderSize);
-                    er.Write(Version);
-                    er.Write(FileSize);
-                    er.Write(NrBlocks);
-                }
+                er.Write(Signature, Encoding.ASCII, false);
+                er.Endianness = LibEveryFileExplorer.IO.Endianness.BigEndian;
+                er.Write(Endianness);
+                if (Endianness == 0xFFFE) er.Endianness = LibEveryFileExplorer.IO.Endianness.LittleEndian;
+                er.Write(HeaderSize);
+                er.Write(Version);
+                er.Write(FileSize);
+                er.Write(NrBlocks);
             }
             [BinaryStringSignature("FLIM")]
 			[BinaryFixedSize(4)]
