@@ -887,13 +887,8 @@ namespace _3DS.GPU
                     return flippedY;
 
                 case 4:
-                    Bitmap rotated90 = new Bitmap(original.Height, original.Width);
-                    using (Graphics g = Graphics.FromImage(rotated90))
-                    {
-                        g.TranslateTransform(0, original.Width);
-                        g.RotateTransform(-90);
-                        g.DrawImage(original, 0, 0);
-                    }
+                    Bitmap rotated90 = (Bitmap)original.Clone();
+                    rotated90.RotateFlip(RotateFlipType.Rotate90FlipNone);
                     return rotated90;
 
                 case 8:

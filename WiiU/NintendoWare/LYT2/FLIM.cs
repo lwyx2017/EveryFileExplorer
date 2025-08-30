@@ -95,16 +95,8 @@ namespace WiiU.NintendoWare.LYT2
                 if (FLIMGenDialog.ShowDialog() != DialogResult.OK) return false;
                 byte flagValue = (byte)FLIMGenDialog.flag;
                 Image.Flag = flagValue;
-                if (flagValue == 4)
-                {
-                    Image.Width = (ushort)bitmap.Height;
-                    Image.Height = (ushort)bitmap.Width;
-                }
-                else
-                {
-                    Image.Width = (ushort)bitmap.Width;
-                    Image.Height = (ushort)bitmap.Height;
-                }
+                Image.Width = (ushort)bitmap.Width;
+                Image.Height = (ushort)bitmap.Height;
                 switch (FLIMGenDialog.FormatIndex)
                 {
                     case 0:
