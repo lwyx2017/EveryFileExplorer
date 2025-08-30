@@ -871,6 +871,55 @@ namespace _3DS.GPU
             }
         }
 
+        public static unsafe byte[] FromBitmap(Bitmap Picture, ImageFormat Format, byte Flag, bool ExactSize = false)
+        {
+            Bitmap transformedPicture = ApplyInverseTransformation(Picture, Flag);
+            return FromBitmap(transformedPicture, Format, ExactSize);
+        }
+
+        private static Bitmap ApplyInverseTransformation(Bitmap original, byte flag)
+        {
+            switch (flag)
+            {
+                case 2:
+                    Bitmap flippedY = new Bitmap(original);
+                    flippedY.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    return flippedY;
+
+                case 4:
+                    Bitmap rotated90 = new Bitmap(original.Height, original.Width);
+                    using (Graphics g = Graphics.FromImage(rotated90))
+                    {
+                        g.TranslateTransform(0, original.Width);
+                        g.RotateTransform(-90);
+                        g.DrawImage(original, 0, 0);
+                    }
+                    return rotated90;
+
+                case 8:
+                    return Transpose(original);
+
+                default:
+                    return new Bitmap(original);
+            }
+        }
+
+        private static Bitmap Transpose(Bitmap original)
+        {
+            Bitmap transposed = new Bitmap(original.Height, original.Width);
+
+            for (int y = 0; y < original.Height; y++)
+            {
+                for (int x = 0; x < original.Width; x++)
+                {
+                    Color pixel = original.GetPixel(x, y);
+                    transposed.SetPixel(y, x, pixel);
+                }
+            }
+
+            return transposed;
+        }
+
         private static int ColorClamp(int Color)
         {
             if (Color > 255) Color = 255;

@@ -85,73 +85,83 @@ namespace WiiU.NintendoWare.LYT2
 
         public bool CreateFromFile()
         {
-            System.Windows.Forms.OpenFileDialog f = new System.Windows.Forms.OpenFileDialog();
+            OpenFileDialog f = new System.Windows.Forms.OpenFileDialog();
             f.Filter = "PNG Files (*.png)|*.png";
             if (f.ShowDialog() == System.Windows.Forms.DialogResult.OK
                 && f.FileName.Length > 0)
             {
                 Bitmap bitmap = new Bitmap(new MemoryStream(File.ReadAllBytes(f.FileName)));
                 UI.BFLIMGenDialog FLIMGenDialog = new BFLIMGenDialog();
-                FLIMGenDialog.ShowDialog();
-                Image.Width = (ushort)bitmap.Width;
-                Image.Height = (ushort)bitmap.Height;
-                switch (FLIMGenDialog.index)
+                if (FLIMGenDialog.ShowDialog() != DialogResult.OK) return false;
+                byte flagValue = (byte)FLIMGenDialog.flag;
+                Image.Flag = flagValue;
+                if (flagValue == 4)
+                {
+                    Image.Width = (ushort)bitmap.Height;
+                    Image.Height = (ushort)bitmap.Width;
+                }
+                else
+                {
+                    Image.Width = (ushort)bitmap.Width;
+                    Image.Height = (ushort)bitmap.Height;
+                }
+                switch (FLIMGenDialog.FormatIndex)
                 {
                     case 0:
                         Image.Format = 9;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA8);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA8, Image.Flag);
                         break;
                     case 1:
                         Image.Format = 6;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGB8);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGB8, Image.Flag);
                         break;
                     case 2:
                         Image.Format = 7;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA5551);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA5551, Image.Flag);
                         break;
                     case 3:
                         Image.Format = 5;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGB565);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGB565, Image.Flag);
                         break;
                     case 4:
                         Image.Format = 8;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA4);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA4, Image.Flag);
                         break;
                     case 5:
                         Image.Format = 3;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.LA8);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.LA8, Image.Flag);
                         break;
                     case 6:
                         Image.Format = 4;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.HILO8);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.HILO8, Image.Flag);
                         break;
                     case 7:
                         Image.Format = 0;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.L8);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.L8, Image.Flag);
                         break;
                     case 8:
                         Image.Format = 1;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.A8);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.A8, Image.Flag);
                         break;
                     case 9:
                         Image.Format = 2;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.LA4);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.LA4, Image.Flag);
                         break;
                     case 10:
                         Image.Format = 0x12;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.L4);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.L4, Image.Flag);
                         break;
                     case 11:
                         Image.Format = 0x13;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.A4);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.A4, Image.Flag);
                         break;
                     case 12:
                         Image.Format = 10;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.ETC1);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.ETC1, Image.Flag);
                         break;
                     case 13:
                         Image.Format = 11;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.ETC1A4);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.ETC1A4, Image.Flag);
                         break;
                     default:
                         throw new Exception("Please select the Image format!");
@@ -161,6 +171,7 @@ namespace WiiU.NintendoWare.LYT2
             }
             return false;
         }
+
 
         public byte[] Data;
 
@@ -260,13 +271,15 @@ namespace WiiU.NintendoWare.LYT2
 					case 0x13: f3 = _3DS.GPU.Textures.ImageFormat.A4; break;
 					default: throw new Exception("Unknown Image Format!");
 				}
-                if (Image.Flag == 0)
+                switch (Image.Flag)
                 {
-                    return _3DS.GPU.Textures.ToBitmap(Data, Image.Width, Image.Height, f3);
-                }
-                else
-                {
-                    return _3DS.GPU.Textures.ToBitmap(Data, Image.Height, Image.Width, f3, Image.Flag);
+                    case 2:
+                        return _3DS.GPU.Textures.ToBitmap(Data, Image.Width, Image.Height, f3, Image.Flag);
+                    case 4:
+                    case 8:
+                        return _3DS.GPU.Textures.ToBitmap(Data, Image.Height, Image.Width, f3, Image.Flag);
+                    default:
+                        return _3DS.GPU.Textures.ToBitmap(Data, Image.Width, Image.Height, f3);
                 }
             }
 			else
