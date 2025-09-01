@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using LibEveryFileExplorer.Files;
 using System.Drawing;
@@ -8,12 +7,13 @@ using System.IO;
 using LibEveryFileExplorer.Files.SimpleFileSystem;
 using _3DS.UI;
 using LibEveryFileExplorer.IO;
+using System.Windows.Forms;
 
 namespace _3DS.NintendoWare.LYT1
 {
-	public class DARC : FileFormat<DARC.darcIdentifier>, IViewable
-	{
-		public DARC(byte[] Data)
+	public class DARC : FileFormat<DARC.darcIdentifier>, IViewable, IWriteable
+    {
+        public DARC(byte[] Data)
 		{
 			EndianBinaryReader er = new EndianBinaryReader(new MemoryStream(Data), Endianness.LittleEndian);
 			try
@@ -41,13 +41,69 @@ namespace _3DS.NintendoWare.LYT1
 			}
 		}
 
-
-		public System.Windows.Forms.Form GetDialog()
+		public Form GetDialog()
 		{
 			return new DARCViewer(this);
 		}
 
-		public darcHeader Header;
+        public String GetSaveDefaultFileFilter()
+        {
+            return "Data Archive (*.darc, *.arc)|*.darc;*.arc";
+        }
+
+        public byte[] Write()
+        {
+            MemoryStream m = new MemoryStream();
+            EndianBinaryWriter er = new EndianBinaryWriter(m, Endianness.LittleEndian);
+            byte[] fileData = this.Data;
+            MemoryStream nameTableStream = new MemoryStream();
+            EndianBinaryWriter nameWriter = new EndianBinaryWriter(nameTableStream, Endianness.LittleEndian);
+            Dictionary<string, uint> nameOffsets = new Dictionary<string, uint>();
+            uint currentNameOffset = 0;
+            foreach (var entry in Entries)
+            {
+                string name = FileNameTable[entry.NameOffset];
+                if (!nameOffsets.ContainsKey(name))
+                {
+                    nameOffsets[name] = currentNameOffset;
+                    byte[] nameBytes = Encoding.Unicode.GetBytes(name);
+                    nameWriter.Write(nameBytes, 0, nameBytes.Length);
+                    nameWriter.Write((ushort)0);
+                    currentNameOffset += (uint)(nameBytes.Length + 2);
+                }
+            }
+            byte[] nameTable = nameTableStream.ToArray();
+            MemoryStream fileTableStream = new MemoryStream();
+            EndianBinaryWriter fileTableWriter = new EndianBinaryWriter(fileTableStream, Endianness.LittleEndian);
+            foreach (var entry in Entries)
+            {
+                uint nameOffset = nameOffsets[FileNameTable[entry.NameOffset]];
+                uint flags = (uint)(entry.IsFolder ? 0x01000000 : 0x00000000);
+                fileTableWriter.Write(nameOffset | flags);
+                fileTableWriter.Write(entry.DataOffset);
+                fileTableWriter.Write(entry.DataLength);
+            }
+            byte[] fileTable = fileTableStream.ToArray();
+            Header.FileTableOffset = (uint)Header.HeaderSize;
+            Header.FileTableLength = (uint)fileTable.Length;
+            Header.FileDataOffset = Header.FileTableOffset + Header.FileTableLength + (uint)nameTable.Length;
+            Header.FileDataOffset = (uint)((Header.FileDataOffset + 0x7F) & ~0x7F);
+            Header.FileSize = Header.FileDataOffset + (uint)fileData.Length;
+            Header.Write(er);
+            er.BaseStream.Position = Header.HeaderSize;
+            while (er.BaseStream.Position < Header.FileTableOffset)
+            er.Write((byte)0);
+            er.Write(fileTable, 0, fileTable.Length);
+            er.Write(nameTable, 0, nameTable.Length);
+            while ((er.BaseStream.Position % 128) != 0)
+            er.Write((byte)0);
+            er.Write(fileData, 0, fileData.Length);
+            byte[] result = m.ToArray();
+            er.Close();
+            return result;
+        }
+
+        public darcHeader Header;
 		public class darcHeader
 		{
 			public darcHeader(EndianBinaryReader er)
@@ -62,7 +118,18 @@ namespace _3DS.NintendoWare.LYT1
 				FileTableLength = er.ReadUInt32();
 				FileDataOffset = er.ReadUInt32();
 			}
-			public String Signature;
+            public void Write(EndianBinaryWriter er)
+            {
+                er.Write(Signature, Encoding.ASCII, false);
+                er.Write(Endianness);
+                er.Write(HeaderSize);
+                er.Write(Version);
+                er.Write(FileSize);
+				er.Write(FileTableOffset);
+				er.Write(FileTableLength);
+				er.Write(FileDataOffset);
+            }
+            public String Signature;
 			public UInt16 Endianness;
 			public UInt16 HeaderSize;
 			public UInt32 Version;
@@ -83,7 +150,7 @@ namespace _3DS.NintendoWare.LYT1
 				DataOffset = er.ReadUInt32();
 				DataLength = er.ReadUInt32();
 			}
-			public UInt32 NameOffset;
+            public UInt32 NameOffset;
 			public Boolean IsFolder;
 			public UInt32 DataOffset;//Parent Entry Index if folder
 			public UInt32 DataLength;//Nr Files if folder
@@ -134,7 +201,7 @@ namespace _3DS.NintendoWare.LYT1
 
 			public override string GetFileFilter()
 			{
-				return "Data Archive (*.darc, *.arc)|*.darc;*.arc";
+				return "Data Archive (*.darc, *.arc, *.bcma)|*.darc;*.arc;*.bcma";
 			}
 
 			public override Bitmap GetIcon()
