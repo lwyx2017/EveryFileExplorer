@@ -89,6 +89,7 @@
   <ItemGroup>
     <Compile Include="LZ10.cs" />
     <Compile Include="LZ11.cs" />
+    <Compile Include="LZ4.cs" />
     <Compile Include="LZ77.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RLE.cs" />
