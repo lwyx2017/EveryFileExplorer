@@ -31,6 +31,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WiiU", "WiiU\WiiU.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuneFactory", "RuneFactory\RuneFactory.csproj", "{63342602-8113-4668-B695-C4B5432748CB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Switch", "Switch\Switch.csproj", "{56564EF7-02C8-46CD-AF70-9ED570722C27}"
+	ProjectSection(ProjectDependencies) = postProject
+		{39DBD12F-F7E3-4E9A-97A2-0722A4BA2A26} = {39DBD12F-F7E3-4E9A-97A2-0722A4BA2A26}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -219,6 +224,22 @@ Global
 		{63342602-8113-4668-B695-C4B5432748CB}.Release|x64.Build.0 = Release|x64
 		{63342602-8113-4668-B695-C4B5432748CB}.Release|x86.ActiveCfg = Release|x86
 		{63342602-8113-4668-B695-C4B5432748CB}.Release|x86.Build.0 = Release|x86
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Debug|x64.Build.0 = Debug|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Debug|x86.Build.0 = Debug|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Release|x64.ActiveCfg = Release|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Release|x64.Build.0 = Release|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Release|x86.ActiveCfg = Release|Any CPU
+		{56564EF7-02C8-46CD-AF70-9ED570722C27}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
