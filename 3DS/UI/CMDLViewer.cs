@@ -294,18 +294,22 @@ namespace _3DS.UI
 				}
 				if (glversion.StartsWith("2.")) Shaders[mm.MaterialIndex].Enable();
 
-				//Gl.glMaterialfv(Gl.GL_FRONT_AND_BACK, Gl.GL_EMISSION, new float[] { mat.Emission_2.R / 255f, mat.Emission_2.G / 255f, mat.Emission_2.B / 255f, mat.Emission_2.A / 255f });
-				//Gl.glMaterialfv(Gl.GL_FRONT_AND_BACK, Gl.GL_AMBIENT, new float[] { mat.Ambient_1.R / 255f, mat.Ambient_1.G / 255f, mat.Ambient_1.B / 255f, mat.Ambient_1.A / 255f });
-				//Gl.glMaterialfv(Gl.GL_FRONT_AND_BACK, Gl.GL_DIFFUSE, new float[] { mat.Diffuse_2.R / 255f, mat.Diffuse_2.G / 255f, mat.Diffuse_2.B / 255f, mat.Diffuse_2.A / 255f });
-				//Gl.glColorMaterial(Gl.GL_FRONT_AND_BACK, Gl.GL_DIFFUSE);
-				//Gl.glEnable(Gl.GL_COLOR_MATERIAL);
+                //Gl.glMaterialfv(Gl.GL_FRONT_AND_BACK, Gl.GL_EMISSION, new float[] { mat.Emission_2.R / 255f, mat.Emission_2.G / 255f, mat.Emission_2.B / 255f, mat.Emission_2.A / 255f });
+                //Gl.glMaterialfv(Gl.GL_FRONT_AND_BACK, Gl.GL_AMBIENT, new float[] { mat.Ambient_1.R / 255f, mat.Ambient_1.G / 255f, mat.Ambient_1.B / 255f, mat.Ambient_1.A / 255f });
+                //Gl.glMaterialfv(Gl.GL_FRONT_AND_BACK, Gl.GL_DIFFUSE, new float[] { mat.Diffuse_2.R / 255f, mat.Diffuse_2.G / 255f, mat.Diffuse_2.B / 255f, mat.Diffuse_2.A / 255f });
+                //Gl.glColorMaterial(Gl.GL_FRONT_AND_BACK, Gl.GL_DIFFUSE);
+                //Gl.glEnable(Gl.GL_COLOR_MATERIAL);
 
-				foreach (var q in vv.PrimitiveSets[0].Primitives[0].IndexStreams)
-				{
-					Vector3[] defs = q.GetFaceData();
-
-					Gl.glBegin(Gl.GL_TRIANGLES);
-					foreach (Vector3 d in defs)
+                if (vv.PrimitiveSets == null || vv.PrimitiveSets.Length == 0) { Gl.glPopMatrix(); continue; }
+                var primSet = vv.PrimitiveSets[0];
+                if (primSet.Primitives == null || primSet.Primitives.Length == 0) { Gl.glPopMatrix(); continue; }
+                var primitive = primSet.Primitives[0];
+                if (primitive.IndexStreams == null || primitive.IndexStreams.Length == 0) { Gl.glPopMatrix(); continue; }
+                foreach (var q in primitive.IndexStreams)
+                {
+                    Vector3[] defs = q.GetFaceData();
+                    Gl.glBegin(Gl.GL_TRIANGLES);
+                    foreach (Vector3 d in defs)
 					{
 						if (p.Normals != null) Gl.glNormal3f(p.Normals[(int)d.X].X, p.Normals[(int)d.X].Y, p.Normals[(int)d.X].Z);
 						if (p.Colors != null) Gl.glColor4f(p.Colors[(int)d.X].R / 255f, p.Colors[(int)d.X].G / 255f, p.Colors[(int)d.X].B / 255f, p.Colors[(int)d.X].A / 255f);
@@ -422,20 +426,24 @@ namespace _3DS.UI
 			{
 				switch (saveFileDialog1.FilterIndex - 1)
 				{
-					case 0:
-						{
-							DAE o = Model.ToDAE(Resource);
-							File.Create(saveFileDialog1.FileName).Close();
-							File.WriteAllBytes(saveFileDialog1.FileName, o.Write());
-							Directory.CreateDirectory(Path.GetDirectoryName(saveFileDialog1.FileName) + "\\Tex");
-							foreach (var v in Resource.Data.Textures)
-							{
-								if (!(v is ImageTextureCtr)) continue;
-								((ImageTextureCtr)v).GetBitmap().Save(Path.GetDirectoryName(saveFileDialog1.FileName) + "\\Tex\\" + v.Name + ".png");
-							}
-							break;
-						}
-					case 1:
+                    case 0:
+                        {
+                            DAE o = Model.ToDAE(Resource);
+                            File.Create(saveFileDialog1.FileName).Close();
+                            File.WriteAllBytes(saveFileDialog1.FileName, o.Write());
+                            var texDir = Path.Combine(Path.GetDirectoryName(saveFileDialog1.FileName), "Tex");
+                            Directory.CreateDirectory(texDir);
+                            if (Resource?.Data?.Textures != null)
+                            {
+                                foreach (var v in Resource.Data.Textures)
+                                {
+                                    if (!(v is ImageTextureCtr)) continue;
+                                    ((ImageTextureCtr)v).GetBitmap().Save(Path.Combine(texDir, v.Name + ".png"));
+                                }
+                            }
+                            break;
+                        }
+                    case 1:
 						{
 							OBJ o = Model.ToOBJ();
 							o.MTLPath = Path.GetFileNameWithoutExtension(saveFileDialog1.FileName) + ".mtl";
@@ -446,31 +454,36 @@ namespace _3DS.UI
 							File.WriteAllBytes(saveFileDialog1.FileName, d);
 							File.Create(Path.ChangeExtension(saveFileDialog1.FileName, "mtl")).Close();
 							File.WriteAllBytes(Path.ChangeExtension(saveFileDialog1.FileName, "mtl"), d2);
-							Directory.CreateDirectory(Path.GetDirectoryName(saveFileDialog1.FileName) + "\\Tex");
-							foreach (var v in Resource.Data.Textures)
-							{
-								//if (v.NrLevels > 2) v.GetBitmap(2).Save(System.IO.Path.GetDirectoryName(Path) + "\\Tex\\" + v.Name + ".png");
-								//else if (v.NrLevels > 1) v.GetBitmap(1).Save(System.IO.Path.GetDirectoryName(Path) + "\\Tex\\" + v.Name + ".png");
-								//else v.GetBitmap(0).Save(System.IO.Path.GetDirectoryName(Path) + "\\Tex\\" + v.Name + ".png");
-								if (!(v is ImageTextureCtr)) continue;
-								((ImageTextureCtr)v).GetBitmap().Save(Path.GetDirectoryName(saveFileDialog1.FileName) + "\\Tex\\" + v.Name + ".png");
-							}
-							break;
+                            var texDir = Path.Combine(Path.GetDirectoryName(saveFileDialog1.FileName), "Tex");
+                            Directory.CreateDirectory(texDir);
+                            if (Resource?.Data?.Textures != null)
+                            {
+                                foreach (var v in Resource.Data.Textures)
+                                {
+                                    if (!(v is ImageTextureCtr)) continue;
+                                    ((ImageTextureCtr)v).GetBitmap().Save(Path.Combine(texDir, v.Name + ".png"));
+                                }
+                            }
+                            break;
 						}
-					case 2:
-						{
-							String result = Model.ToMayaASCII(Resource);
-							File.Create(saveFileDialog1.FileName).Close();
-							File.WriteAllBytes(saveFileDialog1.FileName, Encoding.ASCII.GetBytes(result));
-							Directory.CreateDirectory(Path.GetDirectoryName(saveFileDialog1.FileName) + "\\Tex");
-							foreach (var v in Resource.Data.Textures)
-							{
-								if (!(v is ImageTextureCtr)) continue;
-								((ImageTextureCtr)v).GetBitmap().Save(Path.GetDirectoryName(saveFileDialog1.FileName) + "\\Tex\\" + v.Name + ".png");
-							}
-							break;
-						}
-				}
+                    case 2:
+                        {
+                            String result = Model.ToMayaASCII(Resource);
+                            File.Create(saveFileDialog1.FileName).Close();
+                            File.WriteAllBytes(saveFileDialog1.FileName, Encoding.ASCII.GetBytes(result));
+                            var texDir = Path.Combine(Path.GetDirectoryName(saveFileDialog1.FileName), "Tex");
+                            Directory.CreateDirectory(texDir);
+                            if (Resource?.Data?.Textures != null)
+                            {
+                                foreach (var v in Resource.Data.Textures)
+                                {
+                                    if (!(v is ImageTextureCtr)) continue;
+                                    ((ImageTextureCtr)v).GetBitmap().Save(Path.Combine(texDir, v.Name + ".png"));
+                                }
+                            }
+                            break;
+                        }
+                }
 			}
 		}
 	}

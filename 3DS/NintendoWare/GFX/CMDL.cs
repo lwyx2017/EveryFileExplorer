@@ -2516,13 +2516,20 @@ namespace _3DS.NintendoWare.GFX
 					}
 				}
 
-				if (BlendShapeOffset != 0)
-				{
-					er.BaseStream.Position = BlendShapeOffset;
-					BlendShape = new BlendShapeCtr(er);
-				}
+                if (BlendShapeOffset != 0)
+                {
+                    if (BlendShapeOffset >= 0 && BlendShapeOffset < er.BaseStream.Length)
+                    {
+                        er.BaseStream.Position = BlendShapeOffset;
+                        BlendShape = new BlendShapeCtr(er);
+                    }
+                    else
+                    {
+                        BlendShape = null;
+                    }
+                }
 
-				er.BaseStream.Position = curpos;
+                er.BaseStream.Position = curpos;
 			}
 			public void Write(EndianBinaryWriter er, CGFXWriterContext c)
 			{
