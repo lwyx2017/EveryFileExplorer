@@ -1,0 +1,78 @@
+int successCount = 0;
+int errorCount = 0;
+
+if (Args.Length < 2)
+{
+    Console.WriteLine("Usage: RF_HXTB_BatchExport <input directory> <output directory>");
+    Console.WriteLine("Example: RF_HXTB_BatchExport C:\\Input C:\\Output");
+    return;
+}
+
+string inputDir = Args[0];
+string outputDir = Args[1];
+
+if (!Directory.Exists(inputDir))
+{
+    Console.WriteLine("Error: Input directory does not exist - " + inputDir);
+    return;
+}
+
+if (!Directory.Exists(outputDir))
+{
+    Directory.CreateDirectory(outputDir);
+    Console.WriteLine("Output directory created: " + outputDir);
+}
+
+Console.WriteLine("Starting batch export of HXTB textures...");
+Console.WriteLine("Input directory: " + inputDir);
+Console.WriteLine("Output directory: " + outputDir);
+Console.WriteLine("==========================================");
+
+string[] hxtbFiles = Directory.GetFiles(inputDir, "*.hxtb", SearchOption.AllDirectories);
+
+if (hxtbFiles.Length == 0)
+{
+    Console.WriteLine("No HXTB files found");
+    return;
+}
+
+Console.WriteLine("Found " + hxtbFiles.Length.ToString() + " HXTB files");
+
+foreach (string hxtbFile in hxtbFiles)
+{
+    Console.WriteLine("\nProcessing file: " + hxtbFile);
+    try
+    {
+        string fileName = Path.GetFileNameWithoutExtension(hxtbFile);
+        string fileOutputDir = Path.Combine(outputDir, fileName);
+        RF.HXTB.ExportAllTextures(hxtbFile, fileOutputDir);
+        Console.WriteLine("Successfully exported all textures from " + fileName);
+        successCount++;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Failed to process " + Path.GetFileName(hxtbFile) + ": " + ex.Message);
+        errorCount++;
+        if (ex.Message.Contains("Signature") || ex.Message.Contains("HXTB"))
+        {
+            Console.WriteLine("  May not be a valid HXTB file, skipping...");
+            continue;
+        }
+    }
+}
+Console.WriteLine("\n" + new string('=', 50));
+Console.WriteLine("Batch export completed!");
+Console.WriteLine("Total files: " + (successCount + errorCount).ToString());
+Console.WriteLine("Successes: " + successCount.ToString());
+Console.WriteLine("Failures: " + errorCount.ToString());
+
+double successRate = (double)successCount / hxtbFiles.Length * 100;
+Console.WriteLine("Success rate: " + successRate.ToString("F1") + "%");
+
+if (errorCount > 0)
+{
+    Console.WriteLine("\nFailed files may require manual inspection or special handling.");
+}
+
+Console.WriteLine("\nPress any key to exit...");
+Console.ReadKey();

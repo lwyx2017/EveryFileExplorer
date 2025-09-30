@@ -1,0 +1,77 @@
+int successCount = 0;
+int errorCount = 0;
+
+if (Args.Length < 2)
+{
+    Console.WriteLine("Usage: TPL_BatchExport <input directory> <output directory>");
+    Console.WriteLine("Example: TPL_BatchExport C:\\Input C:\\Output");
+    return;
+}
+
+string inputDir = Args[0];
+string outputDir = Args[1];
+
+if (!Directory.Exists(inputDir))
+{
+    Console.WriteLine("Error: Input directory does not exist - " + inputDir);
+    return;
+}
+
+if (!Directory.Exists(outputDir))
+{
+    Directory.CreateDirectory(outputDir);
+    Console.WriteLine("Output directory created: " + outputDir);
+}
+
+Console.WriteLine("Starting batch export of TPL textures...");
+Console.WriteLine("Input directory: " + inputDir);
+Console.WriteLine("Output directory: " + outputDir);
+Console.WriteLine("==========================================");
+
+string[] tplFiles = Directory.GetFiles(inputDir, "*.tpl", SearchOption.AllDirectories);
+if (tplFiles.Length == 0)
+{
+    Console.WriteLine("No TPL files found");
+    return;
+}
+Console.WriteLine("Found " + tplFiles.Length + " TPL files");
+
+foreach (string tplFile in tplFiles)
+{
+    Console.WriteLine("\nProcessing file: " + tplFile);
+    
+    try
+    {
+        GCNWii.TPL.ExportAllTextures(tplFile, outputDir);
+        
+        Console.WriteLine("Successfully exported all textures from " + Path.GetFileName(tplFile));
+        successCount++;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Failed to process " + Path.GetFileName(tplFile) + ": " + ex.Message);
+        errorCount++;
+        
+        if (ex.Message.Contains("Signature") || ex.Message.Contains("TPL"))
+        {
+            Console.WriteLine("  May not be a valid TPL file, skipping...");
+            continue;
+        }
+    }
+}
+
+Console.WriteLine("\n" + new string('=', 50));
+Console.WriteLine("Batch export completed!");
+Console.WriteLine("Total files: " + (successCount + errorCount));
+Console.WriteLine("Successes: " + successCount);
+Console.WriteLine("Failures: " + errorCount);
+double successRate = (double)successCount / tplFiles.Length * 100;
+Console.WriteLine("Success rate: " + successRate.ToString("F1") + "%");
+
+if (errorCount > 0)
+{
+    Console.WriteLine("\nFailed files may require manual inspection or special handling.");
+}
+
+Console.WriteLine("\nPress any key to exit...");
+Console.ReadKey();

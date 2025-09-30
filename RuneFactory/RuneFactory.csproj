@@ -86,6 +86,7 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="RF3\rf3Archive.cs" />
+    <Compile Include="RFPlugin.cs" />
     <Compile Include="RFWii\FBTI.cs" />
     <Compile Include="RFWii\HXTB.cs" />
     <Compile Include="UI\FBTIViewer.cs">

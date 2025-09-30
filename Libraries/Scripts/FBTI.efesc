@@ -1,0 +1,98 @@
+int successCount = 0;
+int errorCount = 0;
+
+if (Args.Length < 2)
+{
+    Console.WriteLine("Usage: FBTI_BatchUnpack <input directory> <output directory>");
+    Console.WriteLine("Example: FBTI_BatchUnpack C:\\Input C:\\Output");
+    return;
+}
+
+string inputDir = Args[0];
+string outputDir = Args[1];
+
+if (!Directory.Exists(inputDir))
+{
+    Console.WriteLine("Error: Input directory does not exist - " + inputDir);
+    return;
+}
+
+if (!Directory.Exists(outputDir))
+{
+    Directory.CreateDirectory(outputDir);
+    Console.WriteLine("Output directory created: " + outputDir);
+}
+
+Console.WriteLine("Starting batch unpacking of FBTI files...");
+Console.WriteLine("Input directory: " + inputDir);
+Console.WriteLine("Output directory: " + outputDir);
+Console.WriteLine("==========================================");
+
+string[] fbtiFiles = Directory.GetFiles(inputDir, "*.fbti", SearchOption.AllDirectories);
+
+if (fbtiFiles.Length == 0)
+{
+    Console.WriteLine("No FBTI files found");
+    return;
+}
+
+Console.WriteLine("Found " + fbtiFiles.Length + " FBTI files");
+
+foreach (string fbtiFile in fbtiFiles)
+{
+    Console.WriteLine("\nProcessing file: " + fbtiFile);
+    
+    try
+    {
+        string fileName = Path.GetFileNameWithoutExtension(fbtiFile);
+        string fileOutputDir = Path.Combine(outputDir, fileName);
+        RF.FBTI.Unpack(fbtiFile, fileOutputDir);
+        
+        Console.WriteLine("Successfully unpacked " + fileName);
+        successCount++;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Failed to process " + Path.GetFileName(fbtiFile) + ": " + ex.Message);
+        errorCount++;
+        if (ex.Message.Contains("Signature") || ex.Message.Contains("FBTI"))
+        {
+            Console.WriteLine("  May not be a valid FBTI file, skipping...");
+            continue;
+        }
+    }
+}
+
+Console.WriteLine("\n" + new string('=', 50));
+Console.WriteLine("Batch unpacking completed!");
+Console.WriteLine("Total files: " + (successCount + errorCount));
+Console.WriteLine("Successes: " + successCount);
+Console.WriteLine("Failures: " + errorCount);
+
+double successRate = (double)successCount / fbtiFiles.Length * 100;
+Console.WriteLine("Success rate: " + successRate.ToString("F1") + "%");
+
+if (errorCount > 0)
+{
+    Console.WriteLine("\nFailed files may require manual inspection or special handling.");
+}
+
+Console.WriteLine("\nOutput directory structure:");
+Console.WriteLine(outputDir);
+try
+{
+    string[] allDirs = Directory.GetDirectories(outputDir, "*", SearchOption.TopDirectoryOnly);
+    Console.WriteLine("Number of generated subdirectories: " + allDirs.Length);
+    foreach (string dir in allDirs)
+    {
+        string[] files = Directory.GetFiles(dir);
+        Console.WriteLine("  " + Path.GetFileName(dir) + ": " + files.Length + " files");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Unable to read output directory information: " + ex.Message);
+}
+
+Console.WriteLine("\nPress any key to exit...");
+Console.ReadKey();

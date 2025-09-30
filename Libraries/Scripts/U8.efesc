@@ -1,0 +1,93 @@
+int successCount = 0;
+int errorCount = 0;
+
+if (Args.Length < 2)
+{
+    Console.WriteLine("Usage: U8_BatchUnpack <input directory> <output directory>");
+    Console.WriteLine("Example: U8_BatchUnpack C:\\Input C:\\Output");
+    Console.WriteLine("Supported file extensions: .arc, .szs");
+    return;
+}
+
+string inputDir = Args[0];
+string outputDir = Args[1];
+
+if (!Directory.Exists(inputDir))
+{
+    Console.WriteLine("Error: Input directory does not exist - " + inputDir);
+    return;
+}
+
+if (!Directory.Exists(outputDir))
+{
+    Directory.CreateDirectory(outputDir);
+    Console.WriteLine("Output directory created: " + outputDir);
+}
+
+Console.WriteLine("Starting batch unpacking of U8 files...");
+Console.WriteLine("Input directory: " + inputDir);
+Console.WriteLine("Output directory: " + outputDir);
+Console.WriteLine("==========================================");
+
+System.Collections.ArrayList u8FilesList = new System.Collections.ArrayList();
+string[] allFiles = Directory.GetFiles(inputDir, "*.*", SearchOption.AllDirectories);
+
+foreach (string file in allFiles)
+{
+    string lowerFile = file.ToLower();
+    if (lowerFile.EndsWith(".arc") || lowerFile.EndsWith(".szs"))
+    {
+        u8FilesList.Add(file);
+    }
+}
+
+string[] u8Files = (string[])u8FilesList.ToArray(typeof(string));
+
+if (u8Files.Length == 0)
+{
+    Console.WriteLine("No U8 files found (.arc, .szs)");
+    return;
+}
+
+Console.WriteLine("Found " + u8Files.Length + " U8 files");
+
+foreach (string u8File in u8Files)
+{
+    Console.WriteLine("\nProcessing file: " + u8File);
+    
+    try
+    {
+        string fileName = Path.GetFileNameWithoutExtension(u8File);
+        string fileOutputDir = Path.Combine(outputDir, fileName);
+        GCNWii.U8.Unpack(u8File, fileOutputDir);
+        Console.WriteLine("Successfully unpacked " + fileName);
+        successCount++;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Failed to process " + Path.GetFileName(u8File) + ": " + ex.Message);
+        errorCount++;
+        if (ex.Message.Contains("Signature") || ex.Message.Contains("U8"))
+        {
+            Console.WriteLine("  May not be a valid U8 file, skipping...");
+            continue;
+        }
+    }
+}
+
+Console.WriteLine("\n" + new string('=', 50));
+Console.WriteLine("Batch unpacking completed!");
+Console.WriteLine("Total files: " + (successCount + errorCount));
+Console.WriteLine("Successes: " + successCount);
+Console.WriteLine("Failures: " + errorCount);
+
+double successRate = (double)successCount / u8Files.Length * 100;
+Console.WriteLine("Success rate: " + successRate.ToString("F1") + "%");
+
+if (errorCount > 0)
+{
+    Console.WriteLine("\nFailed files may require manual inspection or special handling.");
+}
+
+Console.WriteLine("\nPress any key to exit...");
+Console.ReadKey();
