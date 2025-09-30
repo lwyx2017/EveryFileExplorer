@@ -420,7 +420,11 @@ namespace GCNWii.GPU
                                         int posX = x + x2;
                                         int posY = y + y2;
 
-                                        if (offs + 1 >= TexData.Length) continue;
+                                        if (offs + 1 >= TexData.Length)
+                                        {
+                                            offs += 2;
+                                            continue;
+                                        }
 
                                         ushort indexData = IOUtil.ReadU16BE(TexData, offs);
                                         offs += 2;
@@ -881,13 +885,13 @@ namespace GCNWii.GPU
                                                 if (posX1 < Width)
                                                 {
                                                     uint color = src[posY * stride + posX1];
-                                                    index1 = FindClosestColor(color, optimizedPalette);
+                                                    index1 = (byte)FindClosestColor(color, optimizedPalette);
                                                 }
 
                                                 if (posX2 < Width)
                                                 {
                                                     uint color = src[posY * stride + posX2];
-                                                    index2 = FindClosestColor(color, optimizedPalette);
+                                                    index2 = (byte)FindClosestColor(color, optimizedPalette);
                                                 }
                                             }
 
@@ -1041,7 +1045,7 @@ namespace GCNWii.GPU
                                             if (posY < Height && posX < Width && posY < bitm.Height && posX < bitm.Width)
                                             {
                                                 uint color = src[posY * stride + posX];
-                                                index = FindClosestColor(color, optimizedPalette);
+                                                index = (byte)FindClosestColor(color, optimizedPalette);
                                             }
                                             TexData[offs++] = index;
                                         }
@@ -1162,7 +1166,7 @@ namespace GCNWii.GPU
                                             if (posY < Height && posX < Width)
                                             {
                                                 uint color = src[posY * stride + posX];
-                                                index = FindClosestColorInPalette(color, optimizedPalette);
+                                                index = (ushort)FindClosestColorInPalette(color, optimizedPalette);
                                             }
                                             IOUtil.WriteU16BE(TexData, offs, index);
                                             offs += 2;
@@ -1314,12 +1318,12 @@ namespace GCNWii.GPU
             }
         }
 
-        private static byte FindClosestColor(uint target, uint[] palette)
+        private static int FindClosestColor(uint target, uint[] palette)
         {
             double minDistance = double.MaxValue;
-            byte bestIndex = 0;
+            int bestIndex = 0;
 
-            for (byte i = 0; i < palette.Length; i++)
+            for (int i = 0; i < palette.Length; i++)
             {
                 double dist = CalculateColorDistance(target, palette[i]);
                 if (dist < minDistance)
@@ -1331,12 +1335,12 @@ namespace GCNWii.GPU
             return bestIndex;
         }
 
-        private static ushort FindClosestColorInPalette(uint target, uint[] palette)
+        private static int FindClosestColorInPalette(uint target, uint[] palette)
         {
             double minDistance = double.MaxValue;
-            ushort bestIndex = 0;
+            int bestIndex = 0;
 
-            for (ushort i = 0; i < palette.Length; i++)
+            for (int i = 0; i < palette.Length; i++)
             {
                 double dist = CalculateColorDistance(target, palette[i]);
                 if (dist < minDistance)
