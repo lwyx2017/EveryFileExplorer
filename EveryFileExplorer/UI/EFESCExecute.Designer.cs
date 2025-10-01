@@ -39,6 +39,7 @@
             this.txtScriptPath = new System.Windows.Forms.TextBox();
             this.txtInputPath = new System.Windows.Forms.TextBox();
             this.txtOutputPath = new System.Windows.Forms.TextBox();
+            this.checkBoxpreserve = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // btnBrowseScript
@@ -73,7 +74,7 @@
             // 
             // btnExecute
             // 
-            this.btnExecute.Location = new System.Drawing.Point(79, 221);
+            this.btnExecute.Location = new System.Drawing.Point(136, 249);
             this.btnExecute.Name = "btnExecute";
             this.btnExecute.Size = new System.Drawing.Size(110, 46);
             this.btnExecute.TabIndex = 3;
@@ -83,7 +84,7 @@
             // 
             // btnClose
             // 
-            this.btnClose.Location = new System.Drawing.Point(327, 221);
+            this.btnClose.Location = new System.Drawing.Point(384, 249);
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(108, 46);
             this.btnClose.TabIndex = 4;
@@ -139,11 +140,22 @@
             this.txtOutputPath.Size = new System.Drawing.Size(325, 21);
             this.txtOutputPath.TabIndex = 10;
             // 
+            // checkBoxpreserve
+            // 
+            this.checkBoxpreserve.AutoSize = true;
+            this.checkBoxpreserve.Location = new System.Drawing.Point(144, 205);
+            this.checkBoxpreserve.Name = "checkBoxpreserve";
+            this.checkBoxpreserve.Size = new System.Drawing.Size(348, 16);
+            this.checkBoxpreserve.TabIndex = 11;
+            this.checkBoxpreserve.Text = "Output files preserve the original directory structure";
+            this.checkBoxpreserve.UseVisualStyleBackColor = true;
+            // 
             // EFESCExecute
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(552, 289);
+            this.ClientSize = new System.Drawing.Size(560, 336);
+            this.Controls.Add(this.checkBoxpreserve);
             this.Controls.Add(this.txtOutputPath);
             this.Controls.Add(this.txtInputPath);
             this.Controls.Add(this.txtScriptPath);
@@ -177,5 +189,6 @@
         private System.Windows.Forms.TextBox txtScriptPath;
         private System.Windows.Forms.TextBox txtInputPath;
         private System.Windows.Forms.TextBox txtOutputPath;
+        private System.Windows.Forms.CheckBox checkBoxpreserve;
     }
 }

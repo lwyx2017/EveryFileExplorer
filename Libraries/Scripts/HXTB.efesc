@@ -1,15 +1,25 @@
 int successCount = 0;
 int errorCount = 0;
+bool preserveDirectoryStructure = true;
 
 if (Args.Length < 2)
 {
-    Console.WriteLine("Usage: RF_HXTB_BatchExport <input directory> <output directory>");
-    Console.WriteLine("Example: RF_HXTB_BatchExport C:\\Input C:\\Output");
+    Console.WriteLine("Usage: RF_HXTB_BatchExport <input directory> <output directory> [preserveStructure]");
+    Console.WriteLine("Example: RF_HXTB_BatchExport C:\\Input C:\\Output true");
+    Console.WriteLine("If preserveStructure is true, the original directory structure will be preserved");
     return;
 }
 
 string inputDir = Args[0];
 string outputDir = Args[1];
+
+if (Args.Length >= 3)
+{
+    if (!bool.TryParse(Args[2], out preserveDirectoryStructure))
+    {
+        preserveDirectoryStructure = true;
+    }
+}
 
 if (!Directory.Exists(inputDir))
 {
@@ -26,9 +36,10 @@ if (!Directory.Exists(outputDir))
 Console.WriteLine("Starting batch export of HXTB textures...");
 Console.WriteLine("Input directory: " + inputDir);
 Console.WriteLine("Output directory: " + outputDir);
+Console.WriteLine("Preserve directory structure: " + preserveDirectoryStructure);
 Console.WriteLine("==========================================");
 
-string[] hxtbFiles = Directory.GetFiles(inputDir, "*.hxtb", SearchOption.AllDirectories);
+string[] hxtbFiles = Directory.GetFiles(inputDir, "*.hxtb", preserveDirectoryStructure ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
 
 if (hxtbFiles.Length == 0)
 {
@@ -44,7 +55,25 @@ foreach (string hxtbFile in hxtbFiles)
     try
     {
         string fileName = Path.GetFileNameWithoutExtension(hxtbFile);
-        string fileOutputDir = Path.Combine(outputDir, fileName);
+        string fileOutputDir;
+        
+        if (preserveDirectoryStructure)
+        {
+            string fileDir = Path.GetDirectoryName(hxtbFile);
+            string relativePath = fileDir.Substring(inputDir.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            fileOutputDir = Path.Combine(outputDir, relativePath, fileName);
+        }
+        else
+        {
+            fileOutputDir = Path.Combine(outputDir, fileName);
+        }
+        
+        if (!Directory.Exists(fileOutputDir))
+        {
+            Directory.CreateDirectory(fileOutputDir);
+            Console.WriteLine("Created output directory: " + fileOutputDir);
+        }
+        
         RF.HXTB.ExportAllTextures(hxtbFile, fileOutputDir);
         Console.WriteLine("Successfully exported all textures from " + fileName);
         successCount++;
@@ -60,6 +89,7 @@ foreach (string hxtbFile in hxtbFiles)
         }
     }
 }
+
 Console.WriteLine("\n" + new string('=', 50));
 Console.WriteLine("Batch export completed!");
 Console.WriteLine("Total files: " + (successCount + errorCount).ToString());
@@ -72,6 +102,46 @@ Console.WriteLine("Success rate: " + successRate.ToString("F1") + "%");
 if (errorCount > 0)
 {
     Console.WriteLine("\nFailed files may require manual inspection or special handling.");
+}
+
+Console.WriteLine("\nOutput directory structure:");
+Console.WriteLine(outputDir);
+try
+{
+    SearchOption searchOption = preserveDirectoryStructure ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+    
+    if (preserveDirectoryStructure)
+    {
+        string[] allDirs = Directory.GetDirectories(outputDir, "*", searchOption);
+        int totalFiles = 0;
+        
+        foreach (string dir in allDirs)
+        {
+            string[] files = Directory.GetFiles(dir, "*.png", SearchOption.TopDirectoryOnly);
+            totalFiles += files.Length;
+            if (files.Length > 0)
+            {
+                string relativePath = dir.Substring(outputDir.Length).TrimStart(Path.DirectorySeparatorChar);
+                Console.WriteLine("  " + relativePath + ": " + files.Length + " texture(s)");
+            }
+        }
+        Console.WriteLine("Total number of texture directories: " + allDirs.Length);
+        Console.WriteLine("Total number of exported textures: " + totalFiles);
+    }
+    else
+    {
+        string[] allDirs = Directory.GetDirectories(outputDir, "*", searchOption);
+        Console.WriteLine("Number of generated subdirectories: " + allDirs.Length);
+        foreach (string dir in allDirs)
+        {
+            string[] files = Directory.GetFiles(dir, "*.png", SearchOption.TopDirectoryOnly);
+            Console.WriteLine("  " + Path.GetFileName(dir) + ": " + files.Length + " texture(s)");
+        }
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Unable to read output directory information: " + ex.Message);
 }
 
 Console.WriteLine("\nPress any key to exit...");

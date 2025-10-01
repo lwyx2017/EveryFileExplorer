@@ -10,6 +10,7 @@ namespace EveryFileExplorer.UI
         public EFESCExecute()
         {
             InitializeComponent();
+            checkBoxpreserve.Checked = true;
         }
 
         private void btnBrowseScript_Click(object sender, EventArgs e)
@@ -63,19 +64,15 @@ namespace EveryFileExplorer.UI
 
         private void btnExecute_Click(object sender, EventArgs e)
         {
-            if (!ValidatePaths())return;
+            if (!ValidatePaths()) return;
             try
             {
-                string scriptPath = txtScriptPath.Text.Trim();
-                string inputPath = txtInputPath.Text.Trim();
-                string outputPath = txtOutputPath.Text.Trim();
-                if (scriptPath.Contains(" "))
-                    scriptPath = $"\"{scriptPath}\"";
-                if (inputPath.Contains(" "))
-                    inputPath = $"\"{inputPath}\"";
-                if (outputPath.Contains(" "))
-                    outputPath = $"\"{outputPath}\"";
-                string arguments = $"/K \"EveryFileExplorer.exe\" {scriptPath} {inputPath} {outputPath}";
+                string scriptPath = EscapeArgument(txtScriptPath.Text);
+                string inputPath = EscapeArgument(txtInputPath.Text);
+                string outputPath = EscapeArgument(txtOutputPath.Text);
+                string appendValue = checkBoxpreserve.Checked ? "true" : "false";
+                string arguments = $"/C \"\"EveryFileExplorer.exe\" {scriptPath} {inputPath} {outputPath} {appendValue}\"";
+
                 Process.Start(new ProcessStartInfo("cmd", arguments)
                 {
                     WorkingDirectory = Path.GetDirectoryName(Application.ExecutablePath),
@@ -92,6 +89,13 @@ namespace EveryFileExplorer.UI
                 btnExecute.Enabled = true;
                 btnExecute.Text = "Execute";
             }
+        }
+
+        private string EscapeArgument(string argument)
+        {
+            argument = argument.Trim();
+            if (string.IsNullOrEmpty(argument))return "\"\"";
+            return $"\"{argument}\"";
         }
 
         private void btnClose_Click(object sender, EventArgs e)

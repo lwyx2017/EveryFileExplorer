@@ -1,37 +1,134 @@
 int successCount = 0;
 int errorCount = 0;
+bool preserveDirectoryStructure = true;
 
-if (!Directory.Exists(Args[1])) 
+if (Args.Length < 2)
 {
-    Directory.CreateDirectory(Args[1]);
+    Console.WriteLine("Usage: CGFX_BatchExport <input directory> <output directory> [preserveStructure]");
+    Console.WriteLine("Example: CGFX_BatchExport C:\\Input C:\\Output true");
+    Console.WriteLine("If preserveStructure is true, the original directory structure will be preserved");
+    return;
 }
 
-string[] supportedExtensions = {".cgfx", ".bcmdl", ".bcres",".bctex"};
+string inputDir = Args[0];
+string outputDir = Args[1];
+
+if (Args.Length >= 3)
+{
+    if (!bool.TryParse(Args[2], out preserveDirectoryStructure))
+    {
+        preserveDirectoryStructure = true;
+    }
+}
+
+if (!Directory.Exists(inputDir))
+{
+    Console.WriteLine("Error: Input directory does not exist - " + inputDir);
+    return;
+}
+
+if (!Directory.Exists(outputDir))
+{
+    Directory.CreateDirectory(outputDir);
+    Console.WriteLine("Output directory created: " + outputDir);
+}
+
+Console.WriteLine("Starting batch export of CGFX files...");
+Console.WriteLine("Input directory: " + inputDir);
+Console.WriteLine("Output directory: " + outputDir);
+Console.WriteLine("Preserve directory structure: " + preserveDirectoryStructure);
+Console.WriteLine("==========================================");
+
+string[] supportedExtensions = {".cgfx", ".bcmdl", ".bcres", ".bctex"};
+int totalFiles = 0;
 
 foreach (string extension in supportedExtensions)
 {
-    foreach (var v in Directory.EnumerateFiles(Args[0], "*" + extension, SearchOption.TopDirectoryOnly))
+    SearchOption searchOption = preserveDirectoryStructure ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+    string[] files = Directory.GetFiles(inputDir, "*" + extension, searchOption);
+    totalFiles += files.Length;
+    
+    foreach (string file in files)
     {
-        Console.WriteLine("Found " + v);
+        Console.WriteLine("Found " + file);
+        
         try
         {
-            string outputPath = Path.Combine(Args[1], Path.GetFileNameWithoutExtension(v) + ".obj");
-            N3DS.NW4C.GFX.ToOBJ(v, 0, outputPath);
-            Console.WriteLine("Success: " + v);
+            string finalOutputPath;
+            
+            if (preserveDirectoryStructure)
+            {
+                string fileDir = Path.GetDirectoryName(file);
+                string relativePath = fileDir.Substring(inputDir.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string outputSubDir = Path.Combine(outputDir, relativePath);
+                
+                if (!Directory.Exists(outputSubDir))
+                {
+                    Directory.CreateDirectory(outputSubDir);
+                    Console.WriteLine("Created directory: " + outputSubDir);
+                }
+                
+                finalOutputPath = Path.Combine(outputSubDir, Path.GetFileNameWithoutExtension(file) + ".obj");
+            }
+            else
+            {
+                finalOutputPath = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(file) + ".obj");
+            }
+            
+            N3DS.NW4C.GFX.ToOBJ(file, 0, finalOutputPath);
+            Console.WriteLine("Success: " + file + " -> " + finalOutputPath);
             successCount++;
         }
         catch (Exception ex)
         {
-            Console.WriteLine("ERROR processing " + v + ": " + ex.Message);
+            Console.WriteLine("ERROR processing " + file + ": " + ex.Message);
             Console.WriteLine("Skipping this file...");
             errorCount++;
         }
     }
 }
 
-Console.WriteLine("\n\nConversion summary:");
-Console.WriteLine("Total files: " + (successCount + errorCount));
+Console.WriteLine("\n" + new string('=', 50));
+Console.WriteLine("Conversion summary:");
+Console.WriteLine("Total files found: " + totalFiles);
 Console.WriteLine("Successfully converted: " + successCount);
 Console.WriteLine("Failed conversions: " + errorCount);
+
+if (totalFiles > 0)
+{
+    double successRate = (double)successCount / totalFiles * 100;
+    Console.WriteLine("Success rate: " + successRate.ToString("F1") + "%");
+}
+
+if (errorCount > 0)
+{
+    Console.WriteLine("\nFailed files may require manual inspection or special handling.");
+}
+
+Console.WriteLine("\nExport file statistics:");
+try
+{
+    string[] objFiles = Directory.GetFiles(outputDir, "*.obj", SearchOption.AllDirectories);
+    string[] mtlFiles = Directory.GetFiles(outputDir, "*.mtl", SearchOption.AllDirectories);
+    string[] texDirs = Directory.GetDirectories(outputDir, "*_Tex", SearchOption.AllDirectories);
+    
+    Console.WriteLine("Total OBJ files: " + objFiles.Length);
+    Console.WriteLine("Total MTL files: " + mtlFiles.Length);
+    Console.WriteLine("Total texture directories: " + texDirs.Length);
+    
+    int totalTextures = 0;
+    foreach (string texDir in texDirs)
+    {
+        string[] pngFiles = Directory.GetFiles(texDir, "*.png");
+        totalTextures += pngFiles.Length;
+        Console.WriteLine("  " + Path.GetFileName(texDir) + ": " + pngFiles.Length + " textures");
+    }
+    Console.WriteLine("Total texture files: " + totalTextures);
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Failed to read output file statistics: " + ex.Message);
+}
+
 Console.WriteLine("\nPress any key to exit...");
 Console.ReadKey();

@@ -1,15 +1,25 @@
 int successCount = 0;
 int errorCount = 0;
+bool preserveDirectoryStructure = true;
 
 if (Args.Length < 2)
 {
-    Console.WriteLine("Usage: FBTI_BatchUnpack <input directory> <output directory>");
-    Console.WriteLine("Example: FBTI_BatchUnpack C:\\Input C:\\Output");
+    Console.WriteLine("Usage: FBTI_BatchUnpack <input directory> <output directory> [preserveStructure]");
+    Console.WriteLine("Example: FBTI_BatchUnpack C:\\Input C:\\Output true");
+    Console.WriteLine("If preserveStructure is true, the original directory structure will be preserved");
     return;
 }
 
 string inputDir = Args[0];
 string outputDir = Args[1];
+
+if (Args.Length >= 3)
+{
+    if (!bool.TryParse(Args[2], out preserveDirectoryStructure))
+    {
+        preserveDirectoryStructure = true;
+    }
+}
 
 if (!Directory.Exists(inputDir))
 {
@@ -26,9 +36,10 @@ if (!Directory.Exists(outputDir))
 Console.WriteLine("Starting batch unpacking of FBTI files...");
 Console.WriteLine("Input directory: " + inputDir);
 Console.WriteLine("Output directory: " + outputDir);
+Console.WriteLine("Preserve directory structure: " + preserveDirectoryStructure);
 Console.WriteLine("==========================================");
 
-string[] fbtiFiles = Directory.GetFiles(inputDir, "*.fbti", SearchOption.AllDirectories);
+string[] fbtiFiles = Directory.GetFiles(inputDir, "*.fbti", preserveDirectoryStructure ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
 
 if (fbtiFiles.Length == 0)
 {
@@ -45,7 +56,25 @@ foreach (string fbtiFile in fbtiFiles)
     try
     {
         string fileName = Path.GetFileNameWithoutExtension(fbtiFile);
-        string fileOutputDir = Path.Combine(outputDir, fileName);
+        string fileOutputDir;
+        
+        if (preserveDirectoryStructure)
+        {
+            string fileDir = Path.GetDirectoryName(fbtiFile);
+            string relativePath = fileDir.Substring(inputDir.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            fileOutputDir = Path.Combine(outputDir, relativePath, fileName);
+        }
+        else
+        {
+            fileOutputDir = Path.Combine(outputDir, fileName);
+        }
+        
+        if (!Directory.Exists(fileOutputDir))
+        {
+            Directory.CreateDirectory(fileOutputDir);
+            Console.WriteLine("Created output directory: " + fileOutputDir);
+        }
+        
         RF.FBTI.Unpack(fbtiFile, fileOutputDir);
         
         Console.WriteLine("Successfully unpacked " + fileName);
@@ -81,12 +110,33 @@ Console.WriteLine("\nOutput directory structure:");
 Console.WriteLine(outputDir);
 try
 {
-    string[] allDirs = Directory.GetDirectories(outputDir, "*", SearchOption.TopDirectoryOnly);
-    Console.WriteLine("Number of generated subdirectories: " + allDirs.Length);
-    foreach (string dir in allDirs)
+    SearchOption searchOption = preserveDirectoryStructure ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+    
+    if (preserveDirectoryStructure)
     {
-        string[] files = Directory.GetFiles(dir);
-        Console.WriteLine("  " + Path.GetFileName(dir) + ": " + files.Length + " files");
+        string[] allDirs = Directory.GetDirectories(outputDir, "*", searchOption);
+        int totalFiles = 0;
+        foreach (string dir in allDirs)
+        {
+            string[] files = Directory.GetFiles(dir);
+            totalFiles += files.Length;
+            if (files.Length > 0)
+            {
+                Console.WriteLine("  " + dir.Substring(outputDir.Length).TrimStart(Path.DirectorySeparatorChar) + ": " + files.Length + " files");
+            }
+        }
+        Console.WriteLine("Total number of generated directories: " + allDirs.Length);
+        Console.WriteLine("Total number of unpacked files: " + totalFiles);
+    }
+    else
+    {
+        string[] allDirs = Directory.GetDirectories(outputDir, "*", searchOption);
+        Console.WriteLine("Number of generated subdirectories: " + allDirs.Length);
+        foreach (string dir in allDirs)
+        {
+            string[] files = Directory.GetFiles(dir);
+            Console.WriteLine("  " + Path.GetFileName(dir) + ": " + files.Length + " files");
+        }
     }
 }
 catch (Exception ex)

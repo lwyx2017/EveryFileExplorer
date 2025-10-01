@@ -1,15 +1,25 @@
 int successCount = 0;
 int errorCount = 0;
+bool preserveDirectoryStructure = true;
 
 if (Args.Length < 2)
 {
-    Console.WriteLine("Usage: TPL_BatchExport <input directory> <output directory>");
-    Console.WriteLine("Example: TPL_BatchExport C:\\Input C:\\Output");
+    Console.WriteLine("Usage: TPL_BatchExport <input directory> <output directory> [preserveStructure]");
+    Console.WriteLine("Example: TPL_BatchExport C:\\Input C:\\Output true");
+    Console.WriteLine("If preserveStructure is true, the original directory structure will be preserved");
     return;
 }
 
 string inputDir = Args[0];
 string outputDir = Args[1];
+
+if (Args.Length >= 3)
+{
+    if (!bool.TryParse(Args[2], out preserveDirectoryStructure))
+    {
+        preserveDirectoryStructure = true;
+    }
+}
 
 if (!Directory.Exists(inputDir))
 {
@@ -26,6 +36,7 @@ if (!Directory.Exists(outputDir))
 Console.WriteLine("Starting batch export of TPL textures...");
 Console.WriteLine("Input directory: " + inputDir);
 Console.WriteLine("Output directory: " + outputDir);
+Console.WriteLine("Preserve directory structure: " + preserveDirectoryStructure);
 Console.WriteLine("==========================================");
 
 string[] tplFiles = Directory.GetFiles(inputDir, "*.tpl", SearchOption.AllDirectories);
@@ -42,7 +53,22 @@ foreach (string tplFile in tplFiles)
     
     try
     {
-        GCNWii.TPL.ExportAllTextures(tplFile, outputDir);
+        string finalOutputDir = outputDir;
+        
+        if (preserveDirectoryStructure)
+        {
+            string fileDir = Path.GetDirectoryName(tplFile);
+            string relativePath = fileDir.Substring(inputDir.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            finalOutputDir = Path.Combine(outputDir, relativePath);
+            
+            if (!Directory.Exists(finalOutputDir))
+            {
+                Directory.CreateDirectory(finalOutputDir);
+                Console.WriteLine("Created directory: " + finalOutputDir);
+            }
+        }
+        
+        GCNWii.TPL.ExportAllTextures(tplFile, finalOutputDir);
         
         Console.WriteLine("Successfully exported all textures from " + Path.GetFileName(tplFile));
         successCount++;

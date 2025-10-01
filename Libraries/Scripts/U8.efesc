@@ -1,16 +1,26 @@
 int successCount = 0;
 int errorCount = 0;
+bool preserveDirectoryStructure = true;
 
 if (Args.Length < 2)
 {
-    Console.WriteLine("Usage: U8_BatchUnpack <input directory> <output directory>");
-    Console.WriteLine("Example: U8_BatchUnpack C:\\Input C:\\Output");
+    Console.WriteLine("Usage: U8_BatchUnpack <input directory> <output directory> [preserveStructure]");
+    Console.WriteLine("Example: U8_BatchUnpack C:\\Input C:\\Output true");
+    Console.WriteLine("If preserveStructure is true, the original directory structure will be preserved");
     Console.WriteLine("Supported file extensions: .arc, .szs");
     return;
 }
 
 string inputDir = Args[0];
 string outputDir = Args[1];
+
+if (Args.Length >= 3)
+{
+    if (!bool.TryParse(Args[2], out preserveDirectoryStructure))
+    {
+        preserveDirectoryStructure = true;
+    }
+}
 
 if (!Directory.Exists(inputDir))
 {
@@ -27,10 +37,12 @@ if (!Directory.Exists(outputDir))
 Console.WriteLine("Starting batch unpacking of U8 files...");
 Console.WriteLine("Input directory: " + inputDir);
 Console.WriteLine("Output directory: " + outputDir);
+Console.WriteLine("Preserve directory structure: " + preserveDirectoryStructure);
+Console.WriteLine("Supported file extensions: .arc, .szs");
 Console.WriteLine("==========================================");
 
 System.Collections.ArrayList u8FilesList = new System.Collections.ArrayList();
-string[] allFiles = Directory.GetFiles(inputDir, "*.*", SearchOption.AllDirectories);
+string[] allFiles = Directory.GetFiles(inputDir, "*.*", preserveDirectoryStructure ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
 
 foreach (string file in allFiles)
 {
@@ -58,7 +70,25 @@ foreach (string u8File in u8Files)
     try
     {
         string fileName = Path.GetFileNameWithoutExtension(u8File);
-        string fileOutputDir = Path.Combine(outputDir, fileName);
+        string fileOutputDir;
+        
+        if (preserveDirectoryStructure)
+        {
+            string fileDir = Path.GetDirectoryName(u8File);
+            string relativePath = fileDir.Substring(inputDir.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            fileOutputDir = Path.Combine(outputDir, relativePath, fileName);
+        }
+        else
+        {
+            fileOutputDir = Path.Combine(outputDir, fileName);
+        }
+        
+        if (!Directory.Exists(fileOutputDir))
+        {
+            Directory.CreateDirectory(fileOutputDir);
+            Console.WriteLine("Created output directory: " + fileOutputDir);
+        }
+        
         GCNWii.U8.Unpack(u8File, fileOutputDir);
         Console.WriteLine("Successfully unpacked " + fileName);
         successCount++;
@@ -87,6 +117,46 @@ Console.WriteLine("Success rate: " + successRate.ToString("F1") + "%");
 if (errorCount > 0)
 {
     Console.WriteLine("\nFailed files may require manual inspection or special handling.");
+}
+
+Console.WriteLine("\nOutput directory structure:");
+Console.WriteLine(outputDir);
+try
+{
+    SearchOption searchOption = preserveDirectoryStructure ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+    
+    if (preserveDirectoryStructure)
+    {
+        string[] allDirs = Directory.GetDirectories(outputDir, "*", searchOption);
+        int totalFiles = 0;
+        foreach (string dir in allDirs)
+        {
+            string[] files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
+            totalFiles += files.Length;
+            
+            if (files.Length > 0)
+            {
+                string relativePath = dir.Substring(outputDir.Length).TrimStart(Path.DirectorySeparatorChar);
+                Console.WriteLine("  " + relativePath + ": " + files.Length + " files");
+            }
+        }
+        Console.WriteLine("Total number of unpacked directories: " + allDirs.Length);
+        Console.WriteLine("Total number of unpacked files: " + totalFiles);
+    }
+    else
+    {
+        string[] allDirs = Directory.GetDirectories(outputDir, "*", searchOption);
+        Console.WriteLine("Number of generated subdirectories: " + allDirs.Length);
+        foreach (string dir in allDirs)
+        {
+            string[] files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
+            Console.WriteLine("  " + Path.GetFileName(dir) + ": " + files.Length + " files");
+        }
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Unable to read output directory information: " + ex.Message);
 }
 
 Console.WriteLine("\nPress any key to exit...");

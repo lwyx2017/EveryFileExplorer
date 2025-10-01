@@ -1,38 +1,42 @@
 int successCount = 0;
 int errorCount = 0;
+bool preserveDirectoryStructure = true;
 
 if (Args.Length < 2)
 {
-    Console.WriteLine("Usage: BTI_BatchExport <input directory> <output directory> [export mode]");
-    Console.WriteLine("Example: BTI_BatchExport C:\\Input C:\\Output");
-    Console.WriteLine("Example: BTI_BatchExport C:\\Input C:\\Output mipmaps");
-    Console.WriteLine("Export modes:");
-    Console.WriteLine("  (default) - export only main texture");
-    Console.WriteLine("  MipMaps - export all MipMap levels");
+    Console.WriteLine("Usage: BTI_BatchExportWithMipmaps <input directory> <output directory> [preserveStructure]");
+    Console.WriteLine("Example: BTI_BatchExportWithMipmaps C:\\Input C:\\Output true");
+    Console.WriteLine("If preserveStructure is true, the original directory structure will be preserved");
     return;
 }
 
 string inputDir = Args[0];
 string outputDir = Args[1];
-string exportMode = Args.Length > 2 ? Args[2].ToLower() : "normal";
-bool exportMipmaps = (exportMode == "mipmaps");
+
+if (Args.Length >= 3)
+{
+    if (!bool.TryParse(Args[2], out preserveDirectoryStructure))
+    {
+        preserveDirectoryStructure = true;
+    }
+}
 
 if (!Directory.Exists(inputDir))
 {
-    Console.WriteLine("Error: The input directory does not exist - " + inputDir);
+    Console.WriteLine("Error: Input directory does not exist - " + inputDir);
     return;
 }
 
 if (!Directory.Exists(outputDir))
 {
     Directory.CreateDirectory(outputDir);
-    Console.WriteLine("Created output directory: " + outputDir);
+    Console.WriteLine("Output directory created: " + outputDir);
 }
 
-Console.WriteLine("Starting batch export of BTI files...");
+Console.WriteLine("Starting batch export of BTI files with Mipmaps...");
 Console.WriteLine("Input directory: " + inputDir);
 Console.WriteLine("Output directory: " + outputDir);
-Console.WriteLine("Export mode: " + (exportMipmaps ? "all MipMap levels" : "only main texture")); // Fixed variable name capitalization
+Console.WriteLine("Preserve directory structure: " + preserveDirectoryStructure);
 Console.WriteLine("==========================================");
 
 string[] btiFiles = Directory.GetFiles(inputDir, "*.bti", SearchOption.AllDirectories);
@@ -43,33 +47,38 @@ if (btiFiles.Length == 0)
 }
 
 Console.WriteLine("Found " + btiFiles.Length + " BTI files");
+
 foreach (string btiFile in btiFiles)
 {
-    Console.WriteLine("\nProcessing file: " + btiFile); // Fixed verb form
+    Console.WriteLine("\nProcessing file: " + btiFile);
+    
     try
     {
+        string finalOutputDir = outputDir;
         string fileName = Path.GetFileNameWithoutExtension(btiFile);
-        if (exportMipmaps)
+        
+        if (preserveDirectoryStructure)
         {
-            string fileOutputDir = Path.Combine(outputDir, fileName);
-            GCNWii.BTI.ExportWithMipmaps(btiFile, fileOutputDir);
-            Console.WriteLine("Successfully exported all MipMap levels of " + fileName);
+            string fileDir = Path.GetDirectoryName(btiFile);
+            string relativePath = fileDir.Substring(inputDir.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            finalOutputDir = Path.Combine(outputDir, relativePath, fileName);
         }
         else
         {
-            string outputPath = Path.Combine(outputDir, fileName + ".png");
-            GCNWii.BTI.Export(btiFile, outputPath);
-            Console.WriteLine("Successfully exported " + fileName);
+            finalOutputDir = Path.Combine(outputDir, fileName);
         }
+        GCNWii.BTI.ExportWithMipmaps(btiFile, finalOutputDir);
+        Console.WriteLine("Successfully exported all MipMap levels of " + fileName);
         successCount++;
     }
     catch (Exception ex)
     {
-        Console.WriteLine("Processing failed " + Path.GetFileName(btiFile) + ": " + ex.Message);
+        Console.WriteLine("Failed to process " + Path.GetFileName(btiFile) + ": " + ex.Message);
         errorCount++;
+        
         if (ex.Message.Contains("Signature") || ex.Message.Contains("BTI") || ex.Message.Contains("Format"))
         {
-            Console.WriteLine("  It may not be a valid BTI file. Skipping...");
+            Console.WriteLine("  May not be a valid BTI file, skipping...");
             continue;
         }
     }
@@ -77,9 +86,9 @@ foreach (string btiFile in btiFiles)
 
 Console.WriteLine("\n" + new string('=', 50));
 Console.WriteLine("Batch export completed!");
-Console.WriteLine("Total number of files: " + (successCount + errorCount));
-Console.WriteLine("Success: " + successCount);
-Console.WriteLine("Failure: " + errorCount);
+Console.WriteLine("Total files: " + (successCount + errorCount));
+Console.WriteLine("Successes: " + successCount);
+Console.WriteLine("Failures: " + errorCount);
 
 double successRate = (double)successCount / btiFiles.Length * 100;
 Console.WriteLine("Success rate: " + successRate.ToString("F1") + "%");
@@ -88,26 +97,19 @@ if (errorCount > 0)
 {
     Console.WriteLine("\nFailed files may require manual inspection or special handling.");
 }
+
 Console.WriteLine("\nExport file statistics:");
 try
 {
-    if (exportMipmaps)
+    string[] btiDirs = Directory.GetDirectories(outputDir, "*", SearchOption.AllDirectories);
+    int totalMipmaps = 0;
+    foreach (string dir in btiDirs)
     {
-        string[] btiDirs = Directory.GetDirectories(outputDir);
-        int totalMipmaps = 0;
-        foreach (string dir in btiDirs)
-        {
-            string[] pngFiles = Directory.GetFiles(dir, "*.png");
-            totalMipmaps += pngFiles.Length;
-            Console.WriteLine("  " + Path.GetFileName(dir) + ": " + pngFiles.Length + " MipMap levels");
-        }
-        Console.WriteLine("Total: {0} PNG file(s) ({1} BTI file(s))", totalMipmaps, btiDirs.Length);
+        string[] pngFiles = Directory.GetFiles(dir, "*.png");
+        totalMipmaps += pngFiles.Length;
+        Console.WriteLine("  " + Path.GetFileName(dir) + ": " + pngFiles.Length + " MipMap levels");
     }
-    else
-    {
-        string[] pngFiles = Directory.GetFiles(outputDir, "*.png");
-        Console.WriteLine("Total: " + pngFiles.Length + " PNG file(s)");
-    }
+    Console.WriteLine("Total: {0} PNG file(s) ({1} BTI file(s))", totalMipmaps, btiDirs.Length);
 }
 catch (Exception ex)
 {
