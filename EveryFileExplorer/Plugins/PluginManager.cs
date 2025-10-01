@@ -1,46 +1,58 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
-using System.Windows.Forms;
 using System.Reflection;
+using System.Windows.Forms;
 
 namespace EveryFileExplorer.Plugins
 {
-	public class PluginManager
-	{
-		public Plugin[] Plugins { get; private set; }
-		public PluginManager()
-		{
-			string[] d = Directory.GetFiles(Path.GetDirectoryName(Application.ExecutablePath) + "\\Plugins\\", "*.dll", SearchOption.TopDirectoryOnly);
-			List<Plugin> p = new List<Plugin>();
-			foreach (var s in d)
-			{
-				try
-				{
-					AssemblyName.GetAssemblyName(s);
-				}
-				catch (BadImageFormatException)
-				{
-					continue;//This is not a .net assembly
-				}
-				Assembly ass = null;
-				try
-				{
-					ass = Assembly.LoadFile(s);
-				}
-				catch (NotSupportedException e)
-				{
-					MessageBox.Show("Unblock " + AssemblyName.GetAssemblyName(s) + " from external sources!");
-				}
-				if (Plugin.IsPlugin(ass)) p.Add(new Plugin(ass));
-			}
-			Plugins = p.ToArray();
-			foreach (var v in Plugins)
-			{
-				if (v.Initializer != null) v.Initializer.OnLoad();
-			}
-		}
-	}
+    public class PluginManager
+    {
+        public Plugin[] Plugins { get; private set; }
+        public PluginManager()
+        {
+            string pluginsDir = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "Plugins");
+            if (!Directory.Exists(pluginsDir))
+            {
+                Plugins = Array.Empty<Plugin>(); 
+                return;
+            }
+            List<Plugin> plugins = new List<Plugin>();
+            foreach (var dllPath in Directory.GetFiles(pluginsDir, "*.dll", SearchOption.TopDirectoryOnly))
+            {
+                try
+                {
+                    AssemblyName.GetAssemblyName(dllPath);
+                    Assembly assembly = Assembly.LoadFrom(dllPath);
+                    if (Plugin.IsPlugin(assembly))plugins.Add(new Plugin(assembly));
+                }
+                catch (BadImageFormatException)
+                {
+                    continue;
+                }
+                catch (IOException ex)
+                {
+                    MessageBox.Show($"Please unlock {Path.GetFileName(dllPath)}:\n{ex.Message}");
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to load plugin: {Path.GetFileName(dllPath)}\n{ex.Message}");
+                    continue;
+                }
+            }
+            Plugins = plugins.ToArray();
+            foreach (var plugin in Plugins)
+            {
+                try
+                {
+                    plugin.Initializer?.OnLoad();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Plugin initialization failed: {plugin.Name}\n{ex.Message}");
+                }
+            }
+        }
+    }
 }
