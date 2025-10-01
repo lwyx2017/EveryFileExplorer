@@ -155,6 +155,7 @@
             this.Controls.Add(this.btnBrowseOutput);
             this.Controls.Add(this.btnBrowseInput);
             this.Controls.Add(this.btnBrowseScript);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "EFESCExecute";
