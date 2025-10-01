@@ -1,22 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using LibEveryFileExplorer.Files;
 using EveryFileExplorer.Plugins;
-using EveryFileExplorer.Files;
 using LibEveryFileExplorer;
-using System.Runtime.InteropServices;
 using System.Reflection;
 using LibEveryFileExplorer.Compression;
 using LibEveryFileExplorer.Projects;
 using System.IO;
 using EveryFileExplorer.Properties;
 using System.Diagnostics;
+using EveryFileExplorer.UI;
 
 namespace EveryFileExplorer
 {
@@ -483,5 +479,11 @@ namespace EveryFileExplorer
 		{
 			Process.Start(new ProcessStartInfo("cmd") { WorkingDirectory = Path.GetDirectoryName(Application.ExecutablePath) });
 		}
-	}
+
+        private void menuEFEbatch_Click(object sender, EventArgs e)
+        {
+			EFESCExecute EFESC = new EFESCExecute();
+			EFESC.ShowDialog(this);
+        }
+    }
 }
