@@ -181,7 +181,11 @@ namespace CommonCompressors
 
             public override bool IsFormat(byte[] Data)
             {
-                return Data.Length > 4 && Data[0] == 0x11;
+                if (Data.Length < 4) return false;
+                if (Data[0] != 0x11) return false;
+                uint decompressedSize = (uint)(Data[1] | (Data[2] << 8) | (Data[3] << 16));
+                if (decompressedSize < 4) return false;
+                return true;
             }
         }
     }
