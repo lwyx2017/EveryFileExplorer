@@ -359,7 +359,7 @@ namespace NDS.GPU
 			return b;
 		}
 
-		private static Color[] ConvertABGR1555(byte[] Data)
+		public static Color[] ConvertABGR1555(byte[] Data)
 		{
 			Color[] data = new Color[Data.Length / 2];
 			for (int i = 0; i < Data.Length; i += 2)
@@ -369,7 +369,7 @@ namespace NDS.GPU
 			return data;
 		}
 
-		private static Color[] ConvertXBGR1555(byte[] Data)
+        public static Color[] ConvertXBGR1555(byte[] Data)
 		{
 			Color[] data = new Color[Data.Length / 2];
 			for (int i = 0; i < Data.Length; i += 2)
