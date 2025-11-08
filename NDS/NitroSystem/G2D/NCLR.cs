@@ -11,15 +11,32 @@ using NDS.UI;
 
 namespace NDS.NitroSystem.G2D
 {
-    public class NCLR : FileFormat<NCLR.NCLRIdentifier>//, IViewable,IWriteable
+    public class NCLR : FileFormat<NCLR.NCLRIdentifier>, IViewable, IWriteable, IEmptyCreatable
     {
+        public NCLR()
+        {
+            Header = new NCLRHeader();
+            Palettedata = new PaletteData();
+        }
+
         public NCLR(byte[] Data)
         {
             EndianBinaryReaderEx er = new EndianBinaryReaderEx(new MemoryStream(Data), Endianness.LittleEndian);
             try
             {
                 Header = new NCLRHeader(er);
-                Palettedata = new PaletteData(er);
+                Palettedata = new PaletteData(er, Header);
+                if (er.BaseStream.Position < er.BaseStream.Length)
+                {
+                    try
+                    {
+                        PalettecompressData = new PaletteCompressData(er);
+                    }
+                    catch
+                    {
+                        PalettecompressData = null;
+                    }
+                }
             }
             finally
             {
@@ -43,6 +60,13 @@ namespace NDS.NitroSystem.G2D
             MemoryStream m = new MemoryStream();
             EndianBinaryWriterEx er = new EndianBinaryWriterEx(m, Endianness.LittleEndian);
             Header.Write(er);
+            Palettedata.Write(er);
+            if (PalettecompressData != null)
+            {
+                PalettecompressData.Write(er);
+            }
+            er.BaseStream.Position = 8;
+            er.Write((uint)er.BaseStream.Length);
             byte[] result = m.ToArray();
             er.Close();
             return result;
@@ -51,11 +75,18 @@ namespace NDS.NitroSystem.G2D
         public NCLRHeader Header;
         public class NCLRHeader
         {
+            public NCLRHeader()
+            {
+                Signature = "RLCN";
+                Endianness = 0xFEFF;
+                HeaderSize = 16;
+                Constant = 256;
+            }
             public NCLRHeader(EndianBinaryReaderEx er)
             {
                 Signature = er.ReadString(Encoding.ASCII, 4);
                 if (Signature != "RLCN" && Signature != "RPCN") throw new SignatureNotCorrectException(Signature, "RLCN or RPCN", er.BaseStream.Position);
-                Endianess = er.ReadUInt16();
+                Endianness = er.ReadUInt16();
                 Constant = er.ReadUInt16();
                 Filesize = er.ReadUInt32();
                 HeaderSize = er.ReadUInt16();
@@ -64,14 +95,14 @@ namespace NDS.NitroSystem.G2D
             public void Write(EndianBinaryWriterEx er)
             {
                 er.Write(Signature, Encoding.ASCII, false);
-                er.Write(Endianess);
+                er.Write(Endianness);
                 er.Write(Constant);
                 er.Write(Filesize);
                 er.Write(HeaderSize);
                 er.Write(Section);
             }
             public string Signature;
-            public UInt16 Endianess;
+            public UInt16 Endianness;
             public UInt16 Constant;
             public UInt32 Filesize;
             public UInt16 HeaderSize;
@@ -81,15 +112,38 @@ namespace NDS.NitroSystem.G2D
         public PaletteData Palettedata;
         public class PaletteData
         {
-            public PaletteData(EndianBinaryReaderEx er)
+            public PaletteData()
+            {
+                Signature = "TTLP";
+                TextureFormat = Textures.ImageFormat.PLTT16;
+                bExtendedPlt = false;
+                szByte = 0;
+                pRawData = 16;
+                Data = new byte[0];
+            }
+            public PaletteData(EndianBinaryReaderEx er, NCLRHeader Header)
             {
                 long startPos = er.BaseStream.Position;
                 Signature = er.ReadString(Encoding.ASCII, 4);
                 if (Signature != "TTLP") throw new SignatureNotCorrectException(Signature, "TTLP", er.BaseStream.Position);
+                uint SectionSize = er.ReadUInt32();
                 TextureFormat = (Textures.ImageFormat)er.ReadUInt32();
                 bExtendedPlt = er.ReadUInt32() == 1;
                 szByte = er.ReadUInt32();
                 pRawData = er.ReadUInt32();
+                int dataSize = (int)(SectionSize - 24);
+                Data = er.ReadBytes(dataSize);
+            }
+
+            public void Write(EndianBinaryWriterEx er)
+            {
+                er.Write(Signature, Encoding.ASCII, false);
+                er.Write((uint)(24 + Data.Length));
+                er.Write((uint)TextureFormat);
+                er.Write(bExtendedPlt ? 1 : 0);
+                er.Write(szByte);
+                er.Write(pRawData);
+                er.Write(Data, 0, Data.Length);
             }
             public string Signature;
             public Textures.ImageFormat TextureFormat;
@@ -115,11 +169,28 @@ namespace NDS.NitroSystem.G2D
                     Data[i] = er.ReadUInt16();
                 }
             }
+
+            public void Write(EndianBinaryWriterEx er)
+            {
+                er.Write(Signature, Encoding.ASCII, false);
+                er.Write(numPalette);
+                er.Write(pad16);
+                er.Write(pPlttIdxTbl);
+                for (int i = 0; i < numPalette; i++)
+                {
+                    er.Write(Data[i]);
+                }
+            }
             public string Signature;
             public ushort numPalette;
             public ushort pad16;
             public uint pPlttIdxTbl;
             public ushort[] Data;
+        }
+
+        public Color[] ToColorArray()
+        {
+            return GPU.Textures.ConvertABGR1555(Palettedata.Data);
         }
 
         public class NCLRIdentifier : FileFormatIdentifier
@@ -146,8 +217,8 @@ namespace NDS.NitroSystem.G2D
 
             public override FormatMatch IsFormat(EFEFile File)
             {
-                if (File.Data.Length > 4 && ((File.Data[0] == 'R' && File.Data[1] == 'L' && File.Data[2] == 'C' && File.Data[3] == 'N') || 
-                    (File.Data[0] == 'R' && File.Data[1] == 'P' && File.Data[2] == 'C' && File.Data[3] == 'N')))return FormatMatch.Content;
+                if (File.Data.Length > 4 && ((File.Data[0] == 'R' && File.Data[1] == 'L' && File.Data[2] == 'C' && File.Data[3] == 'N') ||
+                   (File.Data[0] == 'R' && File.Data[1] == 'P' && File.Data[2] == 'C' && File.Data[3] == 'N'))) return FormatMatch.Content;
                 return FormatMatch.No;
             }
         }
