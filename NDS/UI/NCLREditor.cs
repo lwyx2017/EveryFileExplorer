@@ -12,17 +12,20 @@ namespace NDS.UI
     public partial class NCLREditor : UserControl
     {
         NCLR nclrFile;
+        private List<Color> colors = new List<Color>();
+        private int selectedIndex = -1;
+        private bool use16ColorStyle;
+
         public NCLREditor(NCLR nclrFile)
         {
             this.nclrFile = nclrFile;
             InitializeComponent();
             this.colors = new List<Color>(nclrFile.ToColorArray());
+            AutoScroll = true;
+            UpdateScrollSize();
         }
 
         public delegate void SelectedColorChanged(Color c);
-
-        private List<Color> colors = new List<Color>();
-        private int selectedIndex = -1;
 
         [Browsable(false)]
         public Color[] Colors
@@ -31,13 +34,27 @@ namespace NDS.UI
             set
             {
                 colors.Clear();
-                colors.AddRange(value);
-                nclrFile.Palettedata.Data = Textures.ToXBGR1555(value);
+                if (value != null)
+                    colors.AddRange(value);
+                nclrFile.Palettedata.Data = Textures.ToXBGR1555(colors.ToArray());
+                UpdateScrollSize();
                 Invalidate();
             }
         }
 
-        public bool Use16ColorStyle { get; set; }
+        public bool Use16ColorStyle
+        {
+            get { return use16ColorStyle; }
+            set
+            {
+                if (use16ColorStyle != value)
+                {
+                    use16ColorStyle = value;
+                    UpdateScrollSize();
+                    Invalidate();
+                }
+            }
+        }
 
         public int SelectedIndex
         {
@@ -49,6 +66,7 @@ namespace NDS.UI
                     selectedIndex = value;
                     Invalidate();
                     OnSelectedColorChanged?.Invoke(SelectedColor);
+                    ScrollToSelected();
                 }
             }
         }
@@ -74,6 +92,66 @@ namespace NDS.UI
 
         public event SelectedColorChanged OnSelectedColorChanged;
 
+        private void UpdateScrollSize()
+        {
+            if (colors.Count == 0)
+            {
+                AutoScrollMinSize = Size.Empty;
+                return;
+            }
+
+            int columns = Use16ColorStyle ? 16 : Math.Max((ClientSize.Width - 4) / 20, 1);
+            int rows = (colors.Count + columns - 1) / columns;
+            AutoScrollMinSize = new Size(columns * 20 + 8, rows * 20 + 8);
+        }
+
+        private void ScrollToSelected()
+        {
+            if (selectedIndex < 0 || colors.Count == 0) return;
+
+            int columns = Use16ColorStyle ? 16 : Math.Max((ClientSize.Width - 4) / 20, 1);
+            int x = selectedIndex % columns;
+            int y = selectedIndex / columns;
+
+            int blockX = 4 + x * 20;
+            int blockY = 4 + y * 20;
+            Rectangle blockRect = new Rectangle(blockX, blockY, 20, 20);
+
+            int visibleContentX = -AutoScrollPosition.X;
+            int visibleContentY = -AutoScrollPosition.Y;
+            Rectangle visibleContentRect = new Rectangle(visibleContentX, visibleContentY, ClientSize.Width, ClientSize.Height);
+
+            if (visibleContentRect.Contains(blockRect))
+                return;
+
+            int targetContentX = visibleContentX;
+            int targetContentY = visibleContentY;
+
+            if (blockRect.Right > visibleContentRect.Right)
+            {
+                targetContentX = blockRect.Right - ClientSize.Width;
+            }
+            else if (blockRect.Left < visibleContentRect.Left)
+            {
+                targetContentX = blockRect.Left;
+            }
+
+            if (blockRect.Bottom > visibleContentRect.Bottom)
+            {
+                targetContentY = blockRect.Bottom - ClientSize.Height;
+            }
+            else if (blockRect.Top < visibleContentRect.Top)
+            {
+                targetContentY = blockRect.Top;
+            }
+
+            int maxScrollX = Math.Max(0, AutoScrollMinSize.Width - ClientSize.Width);
+            int maxScrollY = Math.Max(0, AutoScrollMinSize.Height - ClientSize.Height);
+            targetContentX = Math.Max(0, Math.Min(targetContentX, maxScrollX));
+            targetContentY = Math.Max(0, Math.Min(targetContentY, maxScrollY));
+            AutoScrollPosition = new Point(-targetContentX, -targetContentY);
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -83,26 +161,23 @@ namespace NDS.UI
             e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
             e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
 
-            int columns = Use16ColorStyle ? 16 : ((this.Width - 4) / 20);
+            int columns = Use16ColorStyle ? 16 : Math.Max((ClientSize.Width - 4) / 20, 1);
             int x = 0, y = 0;
 
             for (int i = 0; i < colors.Count; i++)
             {
-                Rectangle colorRect = new Rectangle(4 + x * 20, 4 + y * 20, 16, 16);
+                int drawX = 4 + x * 20 + AutoScrollPosition.X;
+                int drawY = 4 + y * 20 + AutoScrollPosition.Y;
+                Rectangle colorRect = new Rectangle(drawX, drawY, 16, 16);
+
                 using (SolidBrush brush = new SolidBrush(colors[i]))
-                {
                     e.Graphics.FillRectangle(brush, colorRect);
-                }
 
                 using (Pen pen = new Pen(Color.Black, 1f))
-                {
                     e.Graphics.DrawRectangle(pen, colorRect);
-                }
 
                 if (selectedIndex == i)
-                {
                     DrawSelectionIndicator(e.Graphics, x, y);
-                }
 
                 if (x == columns - 1)
                 {
@@ -110,17 +185,17 @@ namespace NDS.UI
                     y++;
                 }
                 else
-                {
                     x++;
-                }
             }
         }
+
         private void DrawSelectionIndicator(Graphics g, int x, int y)
         {
             using (Pen pen = new Pen(Color.Black, 1f))
             {
-                int baseX = 4 + x * 20;
-                int baseY = 4 + y * 20;
+                int baseX = 4 + x * 20 + AutoScrollPosition.X;
+                int baseY = 4 + y * 20 + AutoScrollPosition.Y;
+
                 g.DrawLine(pen, baseX - 2, baseY - 2, baseX, baseY - 2);
                 g.DrawLine(pen, baseX - 2, baseY - 2, baseX - 2, baseY);
                 g.DrawLine(pen, baseX + 16, baseY - 2, baseX + 18, baseY - 2);
@@ -136,23 +211,25 @@ namespace NDS.UI
         {
             base.OnMouseUp(e);
 
-            int columns = Use16ColorStyle ? 16 : ((this.Width - 4) / 20);
-            int x = (e.X - 4) / 20;
-            int y = (e.Y - 4) / 20;
+            int columns = Use16ColorStyle ? 16 : Math.Max((ClientSize.Width - 4) / 20, 1);
+            int contentX = e.X - AutoScrollPosition.X;
+            int contentY = e.Y - AutoScrollPosition.Y;
+
+            int x = (contentX - 4) / 20;
+            int y = (contentY - 4) / 20;
 
             if (x >= 0 && y >= 0)
             {
                 int index = x + y * columns;
                 if (index < colors.Count)
-                {
                     SelectedIndex = index;
-                }
             }
         }
 
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
+            UpdateScrollSize();
             Invalidate();
         }
 
@@ -162,32 +239,24 @@ namespace NDS.UI
             {
                 case Keys.Right:
                     if (SelectedIndex < colors.Count - 1)
-                    {
                         SelectedIndex++;
-                    }
                     return true;
 
                 case Keys.Left:
                     if (SelectedIndex > 0)
-                    {
                         SelectedIndex--;
-                    }
                     return true;
 
                 case Keys.Up:
-                    int columns = Use16ColorStyle ? 16 : ((this.Width - 4) / 20);
+                    int columns = Use16ColorStyle ? 16 : Math.Max((ClientSize.Width - 4) / 20, 1);
                     if (SelectedIndex >= columns)
-                    {
                         SelectedIndex -= columns;
-                    }
                     return true;
 
                 case Keys.Down:
-                    columns = Use16ColorStyle ? 16 : ((this.Width - 4) / 20);
+                    columns = Use16ColorStyle ? 16 : Math.Max((ClientSize.Width - 4) / 20, 1);
                     if (SelectedIndex < colors.Count - columns)
-                    {
                         SelectedIndex += columns;
-                    }
                     return true;
 
                 case Keys.C | Keys.Control:
@@ -222,9 +291,7 @@ namespace NDS.UI
         {
             base.OnMouseDown(e);
             if (!this.Focused)
-            {
                 this.Focus();
-            }
         }
 
         public class ColorPanel : Panel
@@ -238,6 +305,7 @@ namespace NDS.UI
                 colorToAdd = Color.Black;
             colors.Add(colorToAdd);
             nclrFile.Palettedata.Data = Textures.ToXBGR1555(colors.ToArray());
+            UpdateScrollSize();
             Invalidate();
             SelectedIndex = colors.Count - 1;
         }
@@ -262,6 +330,7 @@ namespace NDS.UI
             {
                 colors.RemoveAt(selectedIndex);
                 nclrFile.Palettedata.Data = Textures.ToXBGR1555(colors.ToArray());
+                UpdateScrollSize();
                 if (selectedIndex >= colors.Count)
                     selectedIndex = colors.Count - 1;
                 Invalidate();
