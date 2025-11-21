@@ -4,7 +4,6 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 using LibEveryFileExplorer.Files;
-using LibEveryFileExplorer.GFX;
 using LibEveryFileExplorer.IO;
 using NDS.GPU;
 using NDS.UI;
@@ -46,8 +45,7 @@ namespace NDS.NitroSystem.G2D
 
         public Form GetDialog()
         {
-            return new Form();
-            //return new NCLRViewer(this);
+            return new NCLRViewer(this);
         }
 
         public string GetSaveDefaultFileFilter()
@@ -115,7 +113,7 @@ namespace NDS.NitroSystem.G2D
             public PaletteData()
             {
                 Signature = "TTLP";
-                TextureFormat = Textures.ImageFormat.PLTT16;
+                Format = Textures.ImageFormat.PLTT16;
                 bExtendedPlt = false;
                 szByte = 0;
                 pRawData = 16;
@@ -127,7 +125,7 @@ namespace NDS.NitroSystem.G2D
                 Signature = er.ReadString(Encoding.ASCII, 4);
                 if (Signature != "TTLP") throw new SignatureNotCorrectException(Signature, "TTLP", er.BaseStream.Position);
                 uint SectionSize = er.ReadUInt32();
-                TextureFormat = (Textures.ImageFormat)er.ReadUInt32();
+                Format = (Textures.ImageFormat)er.ReadUInt32();
                 bExtendedPlt = er.ReadUInt32() == 1;
                 szByte = er.ReadUInt32();
                 pRawData = er.ReadUInt32();
@@ -139,14 +137,14 @@ namespace NDS.NitroSystem.G2D
             {
                 er.Write(Signature, Encoding.ASCII, false);
                 er.Write((uint)(24 + Data.Length));
-                er.Write((uint)TextureFormat);
+                er.Write((uint)Format);
                 er.Write(bExtendedPlt ? 1 : 0);
                 er.Write(szByte);
                 er.Write(pRawData);
                 er.Write(Data, 0, Data.Length);
             }
             public string Signature;
-            public Textures.ImageFormat TextureFormat;
+            public Textures.ImageFormat Format;
             public bool bExtendedPlt;
             public uint szByte;
             public uint pRawData;
@@ -190,7 +188,7 @@ namespace NDS.NitroSystem.G2D
 
         public Color[] ToColorArray()
         {
-            return GPU.Textures.ConvertABGR1555(Palettedata.Data);
+            return GPU.Textures.ConvertXBGR1555(Palettedata.Data);
         }
 
         public class NCLRIdentifier : FileFormatIdentifier

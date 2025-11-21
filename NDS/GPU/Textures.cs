@@ -369,6 +369,21 @@ namespace NDS.GPU
 			return data;
 		}
 
+        public static byte[] ToABGR1555(Color[] Data)
+        {
+            byte[] result = new byte[Data.Length * 2];
+            for (int i = 0; i < Data.Length; i++)
+            {
+                Color color = Data[i];
+                uint abgr1555 = GFXUtil.ToColorFormat(
+                    color.A, color.R, color.G, color.B,
+                    ColorFormat.ABGR1555
+                );
+                IOUtil.WriteU16LE(result, i * 2, (ushort)abgr1555);
+            }
+            return result;
+        }
+
         public static Color[] ConvertXBGR1555(byte[] Data)
 		{
 			Color[] data = new Color[Data.Length / 2];
@@ -378,5 +393,20 @@ namespace NDS.GPU
 			}
 			return data;
 		}
-	}
+
+        public static byte[] ToXBGR1555(Color[] Data)
+        {
+            byte[] result = new byte[Data.Length * 2];
+            for (int i = 0; i < Data.Length; i++)
+            {
+                Color color = Data[i];
+                uint xbgr1555 = GFXUtil.ToColorFormat(
+                    color.A, color.R, color.G, color.B,
+                    ColorFormat.XBGR1555
+                );
+                IOUtil.WriteU16LE(result, i * 2, (ushort)xbgr1555);
+            }
+            return result;
+        }
+    }
 }

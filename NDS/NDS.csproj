@@ -140,6 +140,18 @@
     <Compile Include="SND\IMAADPCMDecoder.cs" />
     <Compile Include="SND\IMAADPCMConst.cs" />
     <Compile Include="SND\IMAADPCMEncoder.cs" />
+    <Compile Include="UI\NCLREditor.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\NCLREditor.Designer.cs">
+      <DependentUpon>NCLREditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\NCLRViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\NCLRViewer.Designer.cs">
+      <DependentUpon>NCLRViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\SPAViewer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -222,6 +234,12 @@
     <EmbeddedResource Include="Resource.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\NCLREditor.resx">
+      <DependentUpon>NCLREditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\NCLRViewer.resx">
+      <DependentUpon>NCLRViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\SPAViewer.resx">
       <DependentUpon>SPAViewer.cs</DependentUpon>
