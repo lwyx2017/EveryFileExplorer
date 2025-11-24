@@ -4,13 +4,18 @@
 
 ### Describe
 I really like this tool, But the original author abandoned the development around 2015.
-Around 2017, I began experimenting with modifications in [This branch](https://github.com/lwyx2016/EveryFileExplorer), But I implemented fewer features and added a lot of unnecessary code, Later, due to losing the recovery key, I could no longer access this old account.
+
+Around 2017, I began experimenting with modifications in [This branch](https://github.com/lwyx2016/EveryFileExplorer)
+
+But I implemented fewer features and added a lot of unnecessary code, Later, due to losing the recovery key, I could no longer access this old account.
 
 Now, I have created this new branch and hope to make some improvements and maintenance within my capabilities when I have time. This branch has exited the Fork network, because in the past someone submitted a PR with my low-quality code to the original author, which is bad!
 
 ### Please note
 My programming skills are limited, significant updates are unlikely.
-Many new features are experimental and may be unstable or incomplete.
+
+I personally do not guarantee the new functionality of this program, Many new features are experimental and may be unstable or incomplete, It may even damage files, please use with caution!
+
 This is personal test experimental project, not an official version, For reliable and full functionality, please consider using other, more mature tools.
 
 ### Build
@@ -18,6 +23,8 @@ The project has been migrated to .NET Framework 4.8, The solution already Add Re
 
 ### Credits
 I will thanks to the creators of these open-source projects, Because I reference to some of their implementation specifications, To attempt to implement similar functionality in EFE.
+
+If you do not wish me to reference to your code in this project, or believe that you should be included, Please contact me and let me know, Thank you.
 
 Kuriimu (IcySon55) https://github.com/IcySon55/Kuriimu
 
@@ -30,6 +37,8 @@ DolphinTextureExtraction-tool (Venomalia) https://github.com/Venomalia/DolphinTe
 WiiLayoutEditor (Gericom) https://github.com/Gericom/WiiLayoutEditor
 
 MKDS Course Modifier (Gericom) The author of this project has not released Github, only a compressed file has been released.
+
+Wexos’s Toolbox (Wexos) (https://wiki.tockdom.com/wiki/Wexos's_Toolbox) Provide MK7 and MK8 HashTables.
 
 ### Special Thanks
 Gericom is undoubtedly the original author of EveryFileExplorer, I am only making improvements based on his foundation, and this program copyright belongs mainly to him.
