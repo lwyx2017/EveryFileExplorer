@@ -140,6 +140,12 @@
     <Compile Include="SND\IMAADPCMDecoder.cs" />
     <Compile Include="SND\IMAADPCMConst.cs" />
     <Compile Include="SND\IMAADPCMEncoder.cs" />
+    <Compile Include="UI\BMGViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\BMGViewer.Designer.cs">
+      <DependentUpon>BMGViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\NCLREditor.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -234,6 +240,9 @@
     <EmbeddedResource Include="Resource.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\BMGViewer.resx">
+      <DependentUpon>BMGViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\NCLREditor.resx">
       <DependentUpon>NCLREditor.cs</DependentUpon>
