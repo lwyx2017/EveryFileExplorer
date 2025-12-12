@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using LibEveryFileExplorer.IO;
 using LibEveryFileExplorer.GFX;
+using LibEveryFileExplorer.IO;
 
 namespace WiiU.GPU
 {
@@ -27,6 +27,14 @@ namespace WiiU.GPU
             Tiled3BThin1 = 14,
             Tiled3BThick = 15,
             LinearSpecial = 16
+        }
+
+        public enum AAMode : uint
+        {
+            AAMode_1X = 0,
+            AAMode_2X = 1,
+            AAMode_4X = 2,
+            AAMode_8X = 3,
         }
 
         public enum ImageFormat : uint
@@ -61,20 +69,10 @@ namespace WiiU.GPU
 
         private static readonly int[] Bpp = { 32, 32, 32, 24, 16, 16, 16, 16, 16, 16, 8, 8, 8, 4, 4, 4, 8, 4, 4, 8, 8, 8, 8, 4, 4, 8 };
 
-        private static readonly int[] TileOrder =
-        {
-             0,  1,   4,  5,
-             2,  3,   6,  7,
-
-             8,  9,  12, 13,
-            10, 11,  14, 15
-        };
-        //1. Swap column 1 and 2, 4 and 5 etc.
-        //2. Put back 8x8 tiles in 16x16 blocks in the order 0, 3
-        //													 1, 2
+        public static int GetBpp(ImageFormat Format) { return Bpp[(uint)Format]; }
 
         private static readonly int[,] ETC1Modifiers =
-        {
+{
             { 2, 8 },
             { 5, 17 },
             { 9, 29 },
@@ -85,14 +83,166 @@ namespace WiiU.GPU
             { 47, 183 }
         };
 
-        //public static int GetBpp(ImageFormat Format) { return Bpp[(uint)Format]; }
-
-        public static Bitmap ToBitmap(byte[] Data, int Width, int Height, ImageFormat Format, TileMode TileMode, uint SwizzleMode, bool ExactSize = false)
+        public static uint GetTextureFormatConstant(ImageFormat Format)
         {
-            return ToBitmap(Data, 0, Width, Height, Format, TileMode, SwizzleMode, ExactSize);
+            switch (Format)
+            {
+                case ImageFormat.RGBA8:
+                case ImageFormat.RGB8:
+                    return 26;
+                case ImageFormat.RGBA8_sRGB:
+                    return 1050;
+                case ImageFormat.RGBA1010102:
+                    return 25;
+                case ImageFormat.RGBA5551:
+                    return 10;
+                case ImageFormat.RGB565:
+                    return 8;
+                default:
+                    return 0;
+            }
         }
 
-        public static unsafe Bitmap ToBitmap(byte[] Data, int Offset, int Width, int Height, ImageFormat Format, TileMode TileMode, uint SwizzleMode, bool ExactSize = false)
+        public static uint GetTextureFormatConstant(string formatName)
+        {
+            if (Enum.TryParse<ImageFormat>(formatName, out ImageFormat format))
+            {
+                return GetTextureFormatConstant(format);
+            }
+            return 0;
+        }
+
+        public static readonly uint[] BCFormats = new uint[]
+        {
+          (uint)ImageFormat.BC1,
+          (uint)ImageFormat.BC1_sRGB,
+          (uint)ImageFormat.BC2,
+          (uint)ImageFormat.BC2_sRGB,
+          (uint)ImageFormat.BC3,
+          (uint)ImageFormat.BC3_sRGB,
+          (uint)ImageFormat.BC4L,
+          (uint)ImageFormat.BC4A,
+          (uint)ImageFormat.BC5
+        };
+
+        public static bool IsCompressed(uint Format)
+        {
+            for (int i = 0; i < BCFormats.Length; i++)
+            {
+                if (BCFormats[i] == Format)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT CalculateParameters(uint Format, uint Width, uint Height, uint Depth, uint Dim, TileMode TileMode, AAMode AA, uint MipLevel)
+        {
+            R600Tiling t = new R600Tiling();
+            return t.GetSurfaceInfo(Format, Width, Height, Depth, Dim, (uint)TileMode, (uint)AA, MipLevel);
+        }
+
+        public static byte[] Swizzle(byte[] LinearData, uint OriginalWidth, uint OriginalHeight, uint Format, uint TileMode, uint SwizzleConfig, uint Pitch, uint Depth, uint Dimension, AAMode AntiAliasing, uint MipLevel)
+        {
+            byte[] SwizzledData = new byte[LinearData.Length];
+            Array.Copy(LinearData, 0, SwizzledData, 0, LinearData.Length);
+            uint MipLevelWidth = Math.Max(OriginalWidth >> (int)MipLevel, 1);
+            uint MipLevelHeight = Math.Max(OriginalHeight >> (int)MipLevel, 1);
+            if (IsCompressed(Format))
+            {
+                FixDimension(ref MipLevelWidth, ref MipLevelHeight);
+            }
+            R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT SurfaceParams =
+            CalculateParameters(Format, OriginalWidth, OriginalHeight, Depth, Dimension, (TileMode)TileMode, (AAMode)AntiAliasing, MipLevel);
+            uint PipeSwizzleMode = (SwizzleConfig >> 8) & 1;
+            uint BankSwizzleMode = (SwizzleConfig >> 9) & 3;
+            uint BitsPerPixel = SurfaceParams.BPP;
+            uint BytesPerPixel = BitsPerPixel / 8;
+            for (uint RowIndex = 0; RowIndex < MipLevelHeight; RowIndex++)
+            {
+                for (uint ColumnIndex = 0; ColumnIndex < MipLevelWidth; ColumnIndex++)
+                {
+                    uint SwizzledAddress = CalculateSwizzledAddress(ColumnIndex, RowIndex, SurfaceParams, PipeSwizzleMode, BankSwizzleMode);
+                    uint LinearAddress = (RowIndex * MipLevelWidth + ColumnIndex) * BytesPerPixel;
+                    if (SwizzledAddress + BytesPerPixel <= SwizzledData.Length &&
+                        LinearAddress + BytesPerPixel <= LinearData.Length)
+                    {
+                        for (int ByteOffset = 0; ByteOffset < BytesPerPixel; ByteOffset++)
+                        {
+                            SwizzledData[SwizzledAddress + (uint)ByteOffset] = LinearData[LinearAddress + (uint)ByteOffset];
+                        }
+                    }
+                }
+            }
+            return SwizzledData;
+        }
+
+        public static byte[] Deswizzle(byte[] SwizzledData, uint OriginalWidth, uint OriginalHeight, uint Format, uint TileMode, uint SwizzleConfig, uint Pitch, uint Depth, uint Dimension, AAMode AntiAliasing, uint MipLevel)
+        {
+            byte[] DeswizzledData = new byte[SwizzledData.Length];
+            Array.Copy(SwizzledData, 0, DeswizzledData, 0, SwizzledData.Length);
+            uint MipLevelWidth = Math.Max(OriginalWidth >> (int)MipLevel, 1);
+            uint MipLevelHeight = Math.Max(OriginalHeight >> (int)MipLevel, 1);
+            if (IsCompressed(Format))
+            {
+                FixDimension(ref MipLevelWidth, ref MipLevelHeight);
+            }
+            R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT SurfaceParams =
+            CalculateParameters(Format, OriginalWidth, OriginalHeight, Depth, Dimension, (TileMode)TileMode, (AAMode)AntiAliasing, MipLevel);
+            uint PipeSwizzleMode = (SwizzleConfig >> 8) & 1;
+            uint BankSwizzleMode = (SwizzleConfig >> 9) & 3;
+            uint BitsPerPixel = SurfaceParams.BPP;
+            uint BytesPerPixel = BitsPerPixel / 8;
+            for (uint RowIndex = 0; RowIndex < MipLevelHeight; RowIndex++)
+            {
+                for (uint ColumnIndex = 0; ColumnIndex < MipLevelWidth; ColumnIndex++)
+                {
+                    uint SwizzledAddress = CalculateSwizzledAddress(ColumnIndex, RowIndex, SurfaceParams, PipeSwizzleMode, BankSwizzleMode);
+                    uint LinearAddress = (RowIndex * MipLevelWidth + ColumnIndex) * BytesPerPixel;
+                    if (LinearAddress + BytesPerPixel <= DeswizzledData.Length &&
+                        SwizzledAddress + BytesPerPixel <= SwizzledData.Length)
+                    {
+                        for (int ByteOffset = 0; ByteOffset < BytesPerPixel; ByteOffset++)
+                        {
+                            DeswizzledData[LinearAddress + (uint)ByteOffset] = SwizzledData[SwizzledAddress + (uint)ByteOffset];
+                        }
+                    }
+                }
+            }
+            return DeswizzledData;
+        }
+
+        private static uint CalculateSwizzledAddress(uint ColumnIndex, uint RowIndex, R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT SurfaceParams, uint PipeSwizzleMode, uint BankSwizzleMode)
+        {
+            if (SurfaceParams.TileMode == 0 || SurfaceParams.TileMode == 1)
+            {
+                return R600Tiling.ComputeSurfaceAddrFromCoordLinear(ColumnIndex, RowIndex, SurfaceParams.BPP, SurfaceParams.Pitch);
+            }
+            else if (SurfaceParams.TileMode == 2 || SurfaceParams.TileMode == 3)
+            {
+                return R600Tiling.ComputeSurfaceAddrFromCoordMicroTiled(ColumnIndex, RowIndex, SurfaceParams.BPP, SurfaceParams.Pitch, SurfaceParams.TileMode);
+            }
+            else
+            {
+                return R600Tiling.ComputeSurfaceAddrFromCoordMacroTiled(ColumnIndex, RowIndex, SurfaceParams.BPP, SurfaceParams.Pitch, SurfaceParams.Height, SurfaceParams.TileMode, PipeSwizzleMode, BankSwizzleMode);
+            }
+        }
+
+        public static void FixDimension(ref uint Width, ref uint Height)
+        {
+            Width += 3;
+            Height += 3;
+            Width /= 4;
+            Height /= 4;
+        }
+
+        public static Bitmap ToBitmap(byte[] Data, int Width, int Height, ImageFormat Format, bool ExactSize = false)
+        {
+            return ToBitmap(Data, 0, Width, Height, Format, ExactSize);
+        }
+
+        public static unsafe Bitmap ToBitmap(byte[] Data, int Offset, int Width, int Height, ImageFormat Format, bool ExactSize = false)
         {
             if (Data == null || Data.Length < 1 || Offset < 0 || Offset >= Data.Length || Width < 1 || Height < 1) return null;
             if (ExactSize && ((Width % 8) != 0 || (Height % 8) != 0)) return null;
@@ -103,29 +253,14 @@ namespace WiiU.GPU
                 Width = 1 << (int)Math.Ceiling(Math.Log(Width, 2));
                 Height = 1 << (int)Math.Ceiling(Math.Log(Height, 2));
             }
-            Bitmap bitm = new Bitmap(Width, Height);//physicalwidth, physicalheight);
+            Bitmap bitm = new Bitmap(physicalwidth, physicalheight);
             BitmapData d = bitm.LockBits(new Rectangle(0, 0, bitm.Width, bitm.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
             uint* res = (uint*)d.Scan0;
-            int offs = Offset;//0;
+            int offs = Offset;
             int stride = d.Stride / 4;
             switch (Format)
             {
                 case ImageFormat.RGBA8:
-                    for (int y = 0; y < Height; y++)
-                    {
-                        for (int x = 0; x < Width; x++)
-                        {
-                            if (x >= physicalwidth) continue;
-                            if (y >= physicalheight) continue;
-                            res[y * stride + x] =
-                                GFXUtil.ConvertColorFormat(
-                                    IOUtil.ReadU32BE(Data, offs),
-                                    ColorFormat.RGBA8888,
-                                    ColorFormat.ARGB8888);
-                            offs += 4;
-                        }
-                    }
-                    break;
                 case ImageFormat.RGBA8_sRGB:
                     for (int y = 0; y < Height; y++)
                     {
@@ -190,6 +325,22 @@ namespace WiiU.GPU
                         }
                     }
                     break;
+                case ImageFormat.RGB565:
+                    for (int y = 0; y < Height; y++)
+                    {
+                        for (int x = 0; x < Width; x++)
+                        {
+                            if (x >= physicalwidth) continue;
+                            if (y >= physicalheight) continue;
+                            res[y * stride + x] =
+                                GFXUtil.ConvertColorFormat(
+                                    IOUtil.ReadU16LE(Data, offs),
+                                    ColorFormat.RGB565,
+                                    ColorFormat.ARGB8888);
+                            offs += 2;
+                        }
+                    }
+                    break;
                 case ImageFormat.RGB555:
                     for (int y = 0; y < Height; y++)
                     {
@@ -200,23 +351,7 @@ namespace WiiU.GPU
                             res[y * stride + x] =
                                 GFXUtil.ConvertColorFormat(
                                     IOUtil.ReadU16BE(Data, offs),
-                                    ColorFormat.RGB555,
-                                    ColorFormat.ARGB8888);
-                            offs += 2;
-                        }
-                    }
-                    break;
-                case ImageFormat.RGB565:
-                    for (int y = 0; y < Height; y++)
-                    {
-                        for (int x = 0; x < Width; x++)
-                        {
-                            if (x >= physicalwidth) continue;
-                            if (y >= physicalheight) continue;
-                            res[y * stride + x] =
-                                GFXUtil.ConvertColorFormat(
-                                    IOUtil.ReadU16BE(Data, offs),
-                                    ColorFormat.RGB565,
+                                    ColorFormat.XRGB1555,
                                     ColorFormat.ARGB8888);
                             offs += 2;
                         }
@@ -316,6 +451,7 @@ namespace WiiU.GPU
                         }
                     }
                     break;
+                case ImageFormat.BC3:
                 case ImageFormat.BC3_sRGB:
                     for (int y2 = 0; y2 < Height; y2 += 4)
                     {
@@ -384,243 +520,8 @@ namespace WiiU.GPU
                 default:
                     throw new NotImplementedException("This format is not implemented yet.");
             }
-            Detile(res, stride, Width, Height, physicalwidth, physicalheight, TileMode);
             bitm.UnlockBits(d);
             return bitm;
-        }
-
-        private static unsafe void Detile(uint* res, int stride, int width, int height, int physicalwidth, int physicalheight, TileMode Mode)
-        {
-            switch (Mode)
-            {
-                case Textures.TileMode.Tiled2DThin1:
-                    DetileTiled2DThin1(res, stride, width, height, physicalwidth, physicalheight);
-                    return;
-                default:
-                    throw new Exception("Unsupported Tilemode!");
-            }
-        }
-
-        //private static readonly int[] Tiled2DThin1OrderA = { 0, 1, 3, 2 };
-        //private static readonly int[] Tiled2DThin1OrderB = { 0, 2, 3, 1 };
-        private static readonly int[] Tiled2DThin1Order = { 2, 0, 1, 3 };
-
-        //Micro tiles: 8x8
-        //Macro tiles: 32x16 (4x2 tiles = 4 banks, 2 pipes)
-
-        //Alignment: 2048 pixels (I think), which matches exactly with the 128x16 blocks
-
-        //First block:
-        //  Macro:
-        //      1 2  5 6
-        //      0 3  4 7
-        //Second block:
-        //  Macro:
-        //      5 6  1 2
-        //      4 7  0 3
-        //Third block:
-        //  Macro:
-        //      3 0  7 4
-        //      2 1  6 5
-        //Fourth block:
-        //  Macro:
-        //      7 4  3 0
-        //      6 5  2 1
-        private static unsafe void DetileTiled2DThin1(uint* res, int stride, int width, int height, int physicalwidth, int physicalheight)
-        {
-            uint[] right_order = new uint[width * height];
-            int q = 0;
-            //Let's put the tiles in the right order
-            for (int y = 0; y < height; y += 8)
-            {
-                for (int xx = 0; xx < width; xx += 64)
-                {
-                    for (int yy = 0; yy < 8; yy++)
-                    {
-                        for (int x = 0; x < 64; x++)
-                        {
-                            right_order[q++] = res[(y + yy) * stride + x + xx];
-                        }
-                    }
-                }
-            }
-
-            q = 0;
-            uint[] Result = new uint[width * height];
-            for (int y = 0; y < height; y += 8)
-            {
-                for (int x = 0; x < width; x += 8)
-                {
-                    for (int yy = 0; yy < 8; yy++)
-                    {
-                        for (int xx = 0; xx < 8; xx++)
-                        {
-                            Result[(y + yy) * width + x + xx] = right_order[q++];
-                        }
-                    }
-                }
-            }
-
-            //
-
-            /* uint[] Result = new uint[width * height];
-             int px = 0;
-             int py = 0;
-             for (int y = 0; y < height; y += /*8/16)
-             {
-                 for (int x = 0; x < width; x += 64)
-                 {
-
-                     /*for (int y2 = 0; y2 < 8; y2++)
-                     {
-                         for (int x2 = 0; x2 < 64; x2++)
-                         {
-                             Result[(y + (x2 / 8)) * width + x + y2 * 8 + x2 % 8] =
-                                 res[(y + y2) * stride + x + x2];
-                         }
-                     }/
-                     /*for (int i = 0; i < 64; i++)//y2 = 0; y2 < 64; y2 += 8)
-                     {
-                         int tile = i;
-                         int q = Tiled2DThin1Order[(tile / 2) % 4];
-                         int p = tile & ~7;
-                         int xx = (p % 16) * 2 + (q % 2) * 8;
-                         //if ((i / 0x20) == 1)
-                         //{
-                         //xx += (i % 2) * 8;
-                         //}
-                         /*else /
-                         xx += (i % 2) * 32;
-                         int yy = p / 16 * 16 + (q / 2) * 8;
-                         for (int y3 = 0; y3 < 8; y3++)
-                         {
-                             for (int x3 = 0; x3 < 8; x3++)
-                             {
-                                 if (y + y3 + yy >= height || x + x3 + xx >= width) continue;
-                                 //if (x + x2 + x3 >= physicalwidth) continue;
-                                 //if (y + y3 + yy >= physicalheight) continue;
-                                 Result[(y + y3 + yy) * width + x + x3 + xx] = ReadPixel(res, stride, width, height, ref px, ref py);
-                             }
-                         }
-                     }/
-                 }
-             }*/
-            //TODO: We now have the tiles, so start constructing the macro tiles
-
-            /*R600Tiling t = new R600Tiling();
-            R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUT r = new R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_INPUT();
-            r.bpp = 32;
-            r.tileMode = 4;
-            r.tileType = 0;
-            r.pitch = (uint)stride;
-            r.height = (uint)height;
-            r.numSlices = 1;
-            r.numSamples = (uint)(height * width);
-            R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT o = new R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT();
-            int i = 0;
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    r.x = (uint)x;
-                    r.y = (uint)y;
-                    r.sample = (uint)i;
-                    int pixel_number = (int)t.ComputeSurfaceAddrFromCoord(ref r, ref o);
-                    /*int pixel_number = 0;
-                    pixel_number |= ((x >> 0) & 1) << 0; // pn[0] = x[0]
-                    pixel_number |= ((x >> 1) & 1) << 1; // pn[1] = x[1]
-                    pixel_number |= ((x >> 2) & 1) << 2; // pn[2] = x[2]
-                    pixel_number |= ((y >> 1) & 1) << 3; // pn[3] = y[1]
-                    pixel_number |= ((y >> 0) & 1) << 4; // pn[4] = y[0]
-                    pixel_number |= ((y >> 2) & 1) << 5; // pn[5] = y[2]/
-
-                    Result[y * width + x] = res[(pixel_number & 0xFFF) / 4];
-                    i++;
-                }
-            }*/
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    //if (x >= physicalwidth) continue;
-                    if (y >= physicalheight) continue;
-                    res[y * stride + x] = Result[y * width + x];
-                }
-            }
-            /*
-            //Swap columns first!
-            for (int c = 0; c < width; c += 16)
-            {
-                //Swap c + 4 and c + 8
-                for (int y = 0; y < height; y++)
-                {
-                    for (int x = 0; x < 4; x++)
-                    {
-                        if (c + x >= physicalwidth) continue;
-                        if (y >= physicalheight) continue;
-                        uint a = res[y * stride + c + x + 4];
-                        uint b = res[y * stride + c + x + 8];
-                        res[y * stride + c + x + 4] = b;
-                        res[y * stride + c + x + 8] = a;
-                    }
-                }
-            }
-            uint[] Result = new uint[width * height];
-            //work in 16x16 and then in 8x8 tiles
-            int px = 0;
-            int py = 0;
-            for (int y = 0; y < height; y += 32)
-            {
-                for (int x = 0; x < width; x += 32)
-                {
-                    for (int j = 0; j < 4; j++)
-                    {
-                        int x4 = (Tiled2DThin1OrderA[j] % 2) * 16;
-                        int y4 = ((Tiled2DThin1OrderA[j] & 2) >> 1) * 16;
-                        //Read out the 256 pixels needed!
-                        uint[] Pixels = new uint[256];
-                        for (int i = 0; i < 256; i++) Pixels[i] = ReadPixel(res, stride, width, height, ref px, ref py);
-                        int idx = 0;
-                        for (int i = 0; i < 4; i++)
-                        {
-                            int x2 = (Tiled2DThin1OrderB[i] % 2) * 8;
-                            int y2 = ((Tiled2DThin1OrderB[i] & 2) >> 1) * 8;
-                            for (int y3 = 0; y3 < 8; y3++)
-                            {
-                                for (int x3 = 0; x3 < 8; x3++)
-                                {
-                                    Result[(y + y2 + y3 + y4) * width + x + x2 + x3 + x4] = Pixels[idx++];
-                                    //res[(y + y2 + y3) * stride + x + x2 + x3] = Pixels[idx++];
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    if (x >= physicalwidth) continue;
-                    if (y >= physicalheight) continue;
-                    res[y * stride + x] = Result[y * width + x];
-                }
-            }
-            */
-        }
-
-        private static unsafe uint ReadPixel(uint* res, int stride, int width, int height, ref int px, ref int py)
-        {
-            if (px >= width || py >= height || px < 0 || py < 0)
-                return 0;//throw new ArgumentException("ReadPixel fail!");
-            uint result = res[py * stride + px];
-            px++;
-            if (px == width)
-            {
-                px = 0;
-                py++;
-            }
-            return result;
         }
 
         private static int ColorClamp(int Color)
@@ -629,6 +530,5 @@ namespace WiiU.GPU
             if (Color < 0) Color = 0;
             return Color;
         }
-
     }
 }
