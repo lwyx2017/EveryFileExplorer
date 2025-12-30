@@ -2,8 +2,8 @@
 
 namespace LibEveryFileExplorer.GFX
 {
-	public class DXT
-	{
+    public class DXT
+    {
         public static uint[] DecodeDXT1(ushort Color0, ushort Color1, uint Data)
         {
             uint[] Palette = new uint[4];
@@ -74,37 +74,36 @@ namespace LibEveryFileExplorer.GFX
         }
 
         public static uint[] DecodeDXT5(ushort Color0, ushort Color1, uint Data, ulong AData)
-		{
-			uint[] Result = DecodeDXT1(Color0, Color1, Data);
-			byte[] AlphaPalette = new byte[8];
-			AlphaPalette[0] = (byte)(AData & 0xFF);
-			AlphaPalette[1] = (byte)((AData >> 8) & 0xFF);
-			AData >>= 16;
-			if (AlphaPalette[0] > AlphaPalette[1])
-			{
-				AlphaPalette[2] = (byte)((6 * AlphaPalette[0] + 1 * AlphaPalette[1]) / 7);
-				AlphaPalette[3] = (byte)((5 * AlphaPalette[0] + 2 * AlphaPalette[1]) / 7);
-				AlphaPalette[4] = (byte)((4 * AlphaPalette[0] + 3 * AlphaPalette[1]) / 7);
-				AlphaPalette[5] = (byte)((3 * AlphaPalette[0] + 4 * AlphaPalette[1]) / 7);
-				AlphaPalette[6] = (byte)((2 * AlphaPalette[0] + 5 * AlphaPalette[1]) / 7);
-				AlphaPalette[7] = (byte)((1 * AlphaPalette[0] + 6 * AlphaPalette[1]) / 7);
-			}
-			else
-			{
-				AlphaPalette[2] = (byte)((4 * AlphaPalette[0] + 1 * AlphaPalette[1]) / 5);
-				AlphaPalette[3] = (byte)((3 * AlphaPalette[0] + 2 * AlphaPalette[1]) / 5);
-				AlphaPalette[4] = (byte)((2 * AlphaPalette[0] + 3 * AlphaPalette[1]) / 5);
-				AlphaPalette[5] = (byte)((1 * AlphaPalette[0] + 4 * AlphaPalette[1]) / 5);
-				AlphaPalette[6] = 0;
-				AlphaPalette[7] = 255;
-			}
-			int aq = 45;
-			for (int i = 0; i < 16; i++)
-			{
-				Result[i] = (Result[i] & 0xFFFFFF) | ((uint)AlphaPalette[(AData >> aq) & 7] << 24);
-				aq -= 3;
-			}
-			return Result;
-		}
-	}
+        {
+            uint[] Result = DecodeDXT1(Color0, Color1, Data);
+            byte[] AlphaPalette = new byte[8];
+            AlphaPalette[0] = (byte)(AData & 0xFF);
+            AlphaPalette[1] = (byte)((AData >> 8) & 0xFF);
+            AData >>= 16;
+            if (AlphaPalette[0] > AlphaPalette[1])
+            {
+                AlphaPalette[2] = (byte)((6 * AlphaPalette[0] + 1 * AlphaPalette[1]) / 7);
+                AlphaPalette[3] = (byte)((5 * AlphaPalette[0] + 2 * AlphaPalette[1]) / 7);
+                AlphaPalette[4] = (byte)((4 * AlphaPalette[0] + 3 * AlphaPalette[1]) / 7);
+                AlphaPalette[5] = (byte)((3 * AlphaPalette[0] + 4 * AlphaPalette[1]) / 7);
+                AlphaPalette[6] = (byte)((2 * AlphaPalette[0] + 5 * AlphaPalette[1]) / 7);
+                AlphaPalette[7] = (byte)((1 * AlphaPalette[0] + 6 * AlphaPalette[1]) / 7);
+            }
+            else
+            {
+                AlphaPalette[2] = (byte)((4 * AlphaPalette[0] + 1 * AlphaPalette[1]) / 5);
+                AlphaPalette[3] = (byte)((3 * AlphaPalette[0] + 2 * AlphaPalette[1]) / 5);
+                AlphaPalette[4] = (byte)((2 * AlphaPalette[0] + 3 * AlphaPalette[1]) / 5);
+                AlphaPalette[5] = (byte)((1 * AlphaPalette[0] + 4 * AlphaPalette[1]) / 5);
+                AlphaPalette[6] = 0;
+                AlphaPalette[7] = 255;
+            }
+            for (int i = 0; i < 16; i++)
+            {
+                int index = (int)((AData >> (i * 3)) & 0x07);
+                Result[i] = (Result[i] & 0x00FFFFFF) | ((uint)AlphaPalette[index] << 24);
+            }
+            return Result;
+        }
+    }
 }
