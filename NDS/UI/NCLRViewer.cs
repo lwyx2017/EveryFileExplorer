@@ -22,6 +22,17 @@ namespace NDS.UI
             nclrEditor.Colors = colors;
             nclrEditor.OnSelectedColorChanged += NclrEditor_OnSelectedColorChanged;
             splitContainer1.Panel1.Controls.Add(nclrEditor);
+            toolStripComboBox_format.Items.Clear();
+            toolStripComboBox_format.Items.AddRange(new string[] { "PLTT16", "PLTT256" });
+
+            if (nclrFile.Palettedata.Format == Textures.ImageFormat.PLTT16)
+            {
+                toolStripComboBox_format.SelectedItem = "PLTT16";
+            }
+            else if (nclrFile.Palettedata.Format == Textures.ImageFormat.PLTT256)
+            {
+                toolStripComboBox_format.SelectedItem = "PLTT256";
+            }
         }
 
         private class HSLColor
@@ -248,6 +259,19 @@ namespace NDS.UI
         {
             numericUpDownBlue.Value = trackBarBlue.Value;
             UpdateSelectedColorFromControls();
+        }
+
+        private void toolStripComboBox_format_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            if (toolStripComboBox_format.SelectedItem == null || nclrFile == null || nclrEditor == null)
+                return;
+            string selectedFormat = toolStripComboBox_format.SelectedItem.ToString();
+            Textures.ImageFormat newFormat = selectedFormat == "PLTT16" ? Textures.ImageFormat.PLTT16 : Textures.ImageFormat.PLTT256;
+            nclrFile.Palettedata.Format = newFormat;
+            bool is16Color = newFormat == Textures.ImageFormat.PLTT16;
+            nclrEditor.Use16ColorStyle = is16Color;
+            nclrEditor.UpdateScrollSize();
+            nclrEditor.Invalidate();
         }
     }
 }

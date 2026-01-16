@@ -52,6 +52,8 @@
             this.label1 = new System.Windows.Forms.Label();
             this.panelColor = new System.Windows.Forms.Panel();
             this.trackBarRed = new System.Windows.Forms.TrackBar();
+            this.toolStripComboBox_format = new System.Windows.Forms.ToolStripComboBox();
+            this.toolStripLabel_format = new System.Windows.Forms.ToolStripLabel();
             this.toolStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -74,7 +76,9 @@
             this.toolStripButton_add,
             this.toolStripButton_remove,
             this.toolStripButton_copy,
-            this.toolStripButton_paste});
+            this.toolStripButton_paste,
+            this.toolStripComboBox_format,
+            this.toolStripLabel_format});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(693, 25);
@@ -337,6 +341,22 @@
             this.trackBarRed.TickFrequency = 16;
             this.trackBarRed.ValueChanged += new System.EventHandler(this.trackBarRed_ValueChanged);
             // 
+            // toolStripComboBox_format
+            // 
+            this.toolStripComboBox_format.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripComboBox_format.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.toolStripComboBox_format.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
+            this.toolStripComboBox_format.Name = "toolStripComboBox_format";
+            this.toolStripComboBox_format.Size = new System.Drawing.Size(121, 25);
+            this.toolStripComboBox_format.SelectedIndexChanged += new System.EventHandler(this.toolStripComboBox_format_SelectedIndexChanged);
+            // 
+            // toolStripLabel_format
+            // 
+            this.toolStripLabel_format.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripLabel_format.Name = "toolStripLabel_format";
+            this.toolStripLabel_format.Size = new System.Drawing.Size(52, 22);
+            this.toolStripLabel_format.Text = "Format:";
+            // 
             // NCLRViewer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -393,5 +413,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Panel panelColor;
         private System.Windows.Forms.TrackBar trackBarRed;
+        private System.Windows.Forms.ToolStripComboBox toolStripComboBox_format;
+        private System.Windows.Forms.ToolStripLabel toolStripLabel_format;
     }
 }

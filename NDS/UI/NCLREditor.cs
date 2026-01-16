@@ -92,7 +92,7 @@ namespace NDS.UI
 
         public event SelectedColorChanged OnSelectedColorChanged;
 
-        private void UpdateScrollSize()
+        public void UpdateScrollSize()
         {
             if (colors.Count == 0)
             {
