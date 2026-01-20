@@ -20,11 +20,11 @@ namespace NDS.NitroSystem.G2D
 
         public NCLR(byte[] Data)
         {
-            EndianBinaryReaderEx er = new EndianBinaryReaderEx(new MemoryStream(Data), Endianness.LittleEndian);
+            EndianBinaryReader er = new EndianBinaryReader(new MemoryStream(Data), Endianness.LittleEndian);
             try
             {
                 Header = new NCLRHeader(er);
-                Palettedata = new PaletteData(er, Header);
+                Palettedata = new PaletteData(er);
                 if (er.BaseStream.Position < er.BaseStream.Length)
                 {
                     try
@@ -36,6 +36,7 @@ namespace NDS.NitroSystem.G2D
                         PalettecompressData = null;
                     }
                 }
+
             }
             finally
             {
@@ -56,7 +57,7 @@ namespace NDS.NitroSystem.G2D
         public byte[] Write()
         {
             MemoryStream m = new MemoryStream();
-            EndianBinaryWriterEx er = new EndianBinaryWriterEx(m, Endianness.LittleEndian);
+            EndianBinaryWriter er = new EndianBinaryWriter(m, Endianness.LittleEndian);
             Header.Write(er);
             Palettedata.Write(er);
             if (PalettecompressData != null)
@@ -80,7 +81,7 @@ namespace NDS.NitroSystem.G2D
                 HeaderSize = 16;
                 Constant = 256;
             }
-            public NCLRHeader(EndianBinaryReaderEx er)
+            public NCLRHeader(EndianBinaryReader er)
             {
                 Signature = er.ReadString(Encoding.ASCII, 4);
                 if (Signature != "RLCN" && Signature != "RPCN") throw new SignatureNotCorrectException(Signature, "RLCN or RPCN", er.BaseStream.Position);
@@ -90,7 +91,7 @@ namespace NDS.NitroSystem.G2D
                 HeaderSize = er.ReadUInt16();
                 Section = er.ReadUInt16();
             }
-            public void Write(EndianBinaryWriterEx er)
+            public void Write(EndianBinaryWriter er)
             {
                 er.Write(Signature, Encoding.ASCII, false);
                 er.Write(Endianness);
@@ -119,21 +120,19 @@ namespace NDS.NitroSystem.G2D
                 pRawData = 16;
                 Data = new byte[0];
             }
-            public PaletteData(EndianBinaryReaderEx er, NCLRHeader Header)
+            public PaletteData(EndianBinaryReader er)
             {
-                long startPos = er.BaseStream.Position;
                 Signature = er.ReadString(Encoding.ASCII, 4);
                 if (Signature != "TTLP") throw new SignatureNotCorrectException(Signature, "TTLP", er.BaseStream.Position);
-                uint SectionSize = er.ReadUInt32();
+                SectionSize = er.ReadUInt32();
                 Format = (Textures.ImageFormat)er.ReadUInt32();
                 bExtendedPlt = er.ReadUInt32() == 1;
                 szByte = er.ReadUInt32();
                 pRawData = er.ReadUInt32();
-                int dataSize = (int)(SectionSize - 24);
-                Data = er.ReadBytes(dataSize);
+                Data = er.ReadBytes((int)(SectionSize - 24));
             }
 
-            public void Write(EndianBinaryWriterEx er)
+            public void Write(EndianBinaryWriter er)
             {
                 er.Write(Signature, Encoding.ASCII, false);
                 er.Write((uint)(24 + Data.Length));
@@ -144,6 +143,7 @@ namespace NDS.NitroSystem.G2D
                 er.Write(Data, 0, Data.Length);
             }
             public string Signature;
+            public uint SectionSize;
             public Textures.ImageFormat Format;
             public bool bExtendedPlt;
             public uint szByte;
@@ -154,10 +154,11 @@ namespace NDS.NitroSystem.G2D
         public PaletteCompressData PalettecompressData;
         public class PaletteCompressData
         {
-            public PaletteCompressData(EndianBinaryReaderEx er)
+            public PaletteCompressData(EndianBinaryReader er)
             {
                 Signature = er.ReadString(Encoding.ASCII, 4);
                 if (Signature != "PMCP") throw new SignatureNotCorrectException(Signature, "PMCP", er.BaseStream.Position);
+                SectionSize = er.ReadUInt32();
                 numPalette = er.ReadUInt16();
                 pad16 = er.ReadUInt16();
                 pPlttIdxTbl = er.ReadUInt32();
@@ -168,9 +169,10 @@ namespace NDS.NitroSystem.G2D
                 }
             }
 
-            public void Write(EndianBinaryWriterEx er)
+            public void Write(EndianBinaryWriter er)
             {
                 er.Write(Signature, Encoding.ASCII, false);
+                er.Write(SectionSize);
                 er.Write(numPalette);
                 er.Write(pad16);
                 er.Write(pPlttIdxTbl);
@@ -180,6 +182,7 @@ namespace NDS.NitroSystem.G2D
                 }
             }
             public string Signature;
+            public uint SectionSize;
             public ushort numPalette;
             public ushort pad16;
             public uint pPlttIdxTbl;
