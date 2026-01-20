@@ -1,15 +1,16 @@
-﻿using System;
+﻿using LibEveryFileExplorer.Files;
+using LibEveryFileExplorer.IO;
+using NDS.UI;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
-using LibEveryFileExplorer.Files;
-using LibEveryFileExplorer.IO;
-using NDS.UI;
 
 namespace NDS
 {
-    public class BMG : FileFormat<BMG.BMGIdentifier>,IViewable//,IWriteable, IEmptyCreatable
+    public class BMG : FileFormat<BMG.BMGIdentifier>, IViewable, IWriteable, IEmptyCreatable
     {
         public BMG()
         {
@@ -19,7 +20,7 @@ namespace NDS
         }
         public BMG(byte[] Data)
         {
-            EndianBinaryReaderEx er = new EndianBinaryReaderEx(new MemoryStream(Data), Endianness.LittleEndian);
+            EndianBinaryReader er = new EndianBinaryReader(new MemoryStream(Data), Endianness.LittleEndian);
             try
             {
                 Header = new BMGHeader(er);
@@ -45,18 +46,13 @@ namespace NDS
         public byte[] Write()
         {
             MemoryStream m = new MemoryStream();
-            EndianBinaryWriterEx er = new EndianBinaryWriterEx(m, Endianness.LittleEndian);
-            long headerPos = er.BaseStream.Position;
+            EndianBinaryWriter er = new EndianBinaryWriter(m, Endianness.LittleEndian);
             Header.Write(er);
-            long inf1Pos = er.BaseStream.Position;
-            INF1.Write(er, new uint[INF1.NrOffset]);
-            long dat1Pos = er.BaseStream.Position;
-            DAT1.Write(er, INF1, out uint[] offsets);
-            INF1.Offsets = offsets;
-            INF1.NrOffset = (ushort)offsets.Length;
-            er.BaseStream.Position = inf1Pos;
-            INF1.Write(er, offsets);
-            er.BaseStream.Position = headerPos + 8;
+            long position = INF1.Write(er);
+            uint[] value = DAT1.Write(er);
+            er.BaseStream.Position = position;
+            er.Write(value, 0, INF1.NrOffset);
+            er.BaseStream.Position = 8;
             er.Write((uint)er.BaseStream.Length);
             byte[] result = m.ToArray();
             er.Close();
@@ -72,7 +68,7 @@ namespace NDS
                 NrSections = 2;
                 Unknown1 = 2;
             }
-            public BMGHeader(EndianBinaryReaderEx er)
+            public BMGHeader(EndianBinaryReader er)
             {
                 Signature = er.ReadString(Encoding.ASCII, 8);
                 if (Signature != "MESGbmg1") throw new SignatureNotCorrectException(Signature, "MESGbmg1", er.BaseStream.Position - 8);
@@ -83,7 +79,7 @@ namespace NDS
                 Unknown3 = er.ReadUInt32();
                 Unknown4 = er.ReadUInt32();
             }
-            public void Write(EndianBinaryWriterEx er)
+            public void Write(EndianBinaryWriter er)
             {
                 er.Write(Signature, Encoding.ASCII, false);
                 er.Write(FileSize);
@@ -108,49 +104,48 @@ namespace NDS
             public INF1Section()
             {
                 Signature = "INF1";
-                Unknown1 = 4;
+                Unknown1 = 0;
                 NrOffset = 0;
                 Offsets = new uint[0];
+                SectionSize = 0;
             }
-            public INF1Section(EndianBinaryReaderEx er)
+
+            public INF1Section(EndianBinaryReader er)
             {
                 long startpos = er.BaseStream.Position;
                 Signature = er.ReadString(Encoding.ASCII, 4);
                 if (Signature != "INF1") throw new SignatureNotCorrectException(Signature, "INF1", er.BaseStream.Position - 4);
-                uint SectionSize = er.ReadUInt32();
+                SectionSize = er.ReadUInt32();
                 NrOffset = er.ReadUInt16();
                 Unknown1 = er.ReadUInt16();
                 Unknown2 = er.ReadUInt32();
                 Offsets = er.ReadUInt32s(NrOffset);
-                long bytesRead = 16 + (NrOffset * 4);
-                long remainingBytes = SectionSize - bytesRead;
-                if (remainingBytes > 0)
-                {
-                    er.ReadBytes((int)remainingBytes);
-                }
+                er.ReadBytes((int)(SectionSize - NrOffset * 4 - 16));
             }
 
-            public void Write(EndianBinaryWriterEx er, uint[] Offsets)
+            public long Write(EndianBinaryWriter er)
             {
+                long position = er.BaseStream.Position;
                 er.Write(Signature, Encoding.ASCII, false);
-                long sizePos = er.BaseStream.Position;
-                er.Write(0u);
+                er.Write(SectionSize);
                 er.Write(NrOffset);
                 er.Write(Unknown1);
                 er.Write(Unknown2);
-                if (Offsets != null && NrOffset > 0)
+                long position2 = er.BaseStream.Position;
+                er.Write(new uint[NrOffset], 0, NrOffset);
+                while (er.BaseStream.Position % 16 != 0)
                 {
-                    er.Write(Offsets, 0, NrOffset);
+                    er.Write((byte)0);
                 }
-                while (er.BaseStream.Position % 4 != 0)
-                er.Write((byte)0);
-                long endPos = er.BaseStream.Position;
-                uint sectionSize = (uint)(endPos - sizePos - 4);
-                er.BaseStream.Position = sizePos;
-                er.Write(sectionSize);
-                er.BaseStream.Position = endPos;
+                long position3 = er.BaseStream.Position;
+                er.BaseStream.Position = position + 4;
+                er.Write((uint)(position3 - position));
+                er.BaseStream.Position = position3;
+                return position2;
             }
+
             public String Signature;
+            public uint SectionSize;
             public ushort NrOffset;
             public ushort Unknown1;
             public uint Unknown2;
@@ -165,12 +160,12 @@ namespace NDS
                 Signature = "DAT1";
                 Strings = new string[0];
             }
-            public DAT1Section(EndianBinaryReaderEx er, INF1Section INF1)
+            public DAT1Section(EndianBinaryReader er, INF1Section INF1)
             {
                 long startpos = er.BaseStream.Position;
                 Signature = er.ReadString(Encoding.ASCII, 4);
                 if (Signature != "DAT1") throw new SignatureNotCorrectException(Signature, "DAT1", er.BaseStream.Position - 4);
-                uint SectionSize = er.ReadUInt32();
+                SectionSize = er.ReadUInt32();
                 Strings = new string[INF1.NrOffset];
                 long datStart = er.BaseStream.Position;
                 for (int i = 0; i < INF1.NrOffset; i++)
@@ -211,83 +206,69 @@ namespace NDS
                     er.ReadByte();
             }
 
-            public void Write(EndianBinaryWriterEx er, INF1Section INF1, out uint[] Offsets)
+            public uint[] Write(EndianBinaryWriter er)
             {
+                List<uint> list = new List<uint>();
+                long num = er.BaseStream.Position + 4;
                 er.Write(Signature, Encoding.ASCII, false);
-                long sizePos = er.BaseStream.Position;
-                er.Write(0);
-                long dataStart = er.BaseStream.Position;
-                Offsets = new uint[INF1.NrOffset];
-
-                for (int i = 0; i < INF1.NrOffset; i++)
+                er.Write(SectionSize);
+                long position = er.BaseStream.Position;
+                er.Write((ushort)0);
+                string[] strings = Strings;
+                foreach (string text in strings)
                 {
-                    if (string.IsNullOrEmpty(Strings[i]))
-                    {
-                        Offsets[i] = 0xFFFFFFFF;
-                        continue;
-                    }
-
-                    Offsets[i] = (uint)(er.BaseStream.Position - dataStart);
-                    string text = Strings[i];
-
+                    list.Add((uint)(er.BaseStream.Position - position));
                     for (int j = 0; j < text.Length; j++)
                     {
-                        if (text[j] == '\r' && j + 1 < text.Length && text[j + 1] == '\n')
+                        if (text[j] == '\r')
                         {
                             er.Write('\n', Encoding.Unicode);
                             j++;
                         }
-                        else if (text[j] == '[' && j + 2 < text.Length && text[j + 1] == '#')
+                        else if (j != text.Length - 1 && text[j] == '[' && text[j + 1] == '#')
                         {
-                            j += 2;
-                            StringBuilder hexData = new StringBuilder();
-                            while (j < text.Length && text[j] != ']')
-                            {
-                                hexData.Append(text[j]);
-                                j++;
-                            }
-                            string hexString = hexData.ToString();
-                            if (hexString.Length % 2 != 0)
-                            {
-                                throw new FormatException($"Invalid hex string length: {hexString}");
-                            }
-                            byte[] data = new byte[hexString.Length / 2];
-                            for (int k = 0; k < data.Length; k++)
-                            {
-                                data[k] = Convert.ToByte(hexString.Substring(k * 2, 2), 16);
-                            }
                             er.Write('\u001a', Encoding.Unicode);
-                            er.Write((byte)(data.Length + 2));
-                            er.Write(data);
+                            j += 2;
+                            while (true)
+                            {
+                                string text2 = "";
+                                char c = text[j++];
+                                if (c == ']')
+                                {
+                                    break;
+                                }
+                                text2 += c;
+                                text2 += text[j++];
+                                er.Write(IOUtil.StringToByte(text2)[0]);
+                            }
+                            j--;
                         }
                         else
                         {
                             er.Write(text[j], Encoding.Unicode);
                         }
                     }
-                    er.Write((ushort)0);
-                    if (er.BaseStream.Position % 2 != 0)
-                    {
-                        er.Write((byte)0);
-                    }
+                    er.Write((byte)0);
+                    er.Write((byte)0);
                 }
                 while (er.BaseStream.Position % 4 != 0)
                 {
                     er.Write((byte)0);
                 }
-                long endPos = er.BaseStream.Position;
-                uint sectionSize = (uint)(endPos - sizePos - 4);
-                er.BaseStream.Position = sizePos;
-                er.Write(sectionSize);
-                er.BaseStream.Position = endPos;
+                long position2 = er.BaseStream.Position;
+                er.BaseStream.Position = num;
+                er.Write((uint)(position2 - num + 4));
+                er.BaseStream.Position = position2;
+                return list.ToArray();
             }
             public String Signature;
+            public uint SectionSize;
             public string[] Strings;
 
             public byte[] ToTxt()
             {
-                MemoryStream memoryStream = new MemoryStream();
-                StreamWriter textWriter = new StreamWriter(memoryStream, Encoding.Unicode);
+                MemoryStream m = new MemoryStream();
+                StreamWriter textWriter = new StreamWriter(m, Encoding.Unicode);
 
                 for (int i = 0; i < Strings.Length; i++)
                 {
@@ -299,16 +280,16 @@ namespace NDS
                 }
 
                 textWriter.Flush();
-                byte[] result = memoryStream.ToArray();
+                byte[] result = m.ToArray();
                 textWriter.Close();
-                memoryStream.Close();
+                m.Close();
                 return result;
             }
 
             public void FromTxt(byte[] file)
             {
-                using (MemoryStream stream = new MemoryStream(file))
-                using (StreamReader textReader = new StreamReader(stream, Encoding.Unicode))
+                using (MemoryStream m = new MemoryStream(file))
+                using (StreamReader textReader = new StreamReader(m, Encoding.Unicode))
                 {
                     string content = textReader.ReadToEnd();
                     if (string.IsNullOrWhiteSpace(content))
