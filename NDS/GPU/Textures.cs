@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using LibEveryFileExplorer.GFX;
 using LibEveryFileExplorer.IO;
+using NDS.NitroSystem.G2D;
 
 namespace NDS.GPU
 {
@@ -23,16 +22,75 @@ namespace NDS.GPU
 			A5I3 = 6,
 			DIRECT = 7
 		}
+
 		public enum CharFormat : uint
 		{
 			CHAR,
-			BMP
-		}
-		public static Bitmap ToBitmap(byte[] Data, byte[] Palette, int PaletteNr, int Width, int Height, ImageFormat Type, CharFormat CharacterType/*, bool cut = true*/, bool firstTransparent = false)
+			BMP,
+            MAX
+        }
+
+        public enum OBJVRamModeChar
+        {
+            OBJVRAMMODE_CHAR_2D = 0,
+            OBJVRAMMODE_CHAR_1D_32K = 16,
+            OBJVRAMMODE_CHAR_1D_64K = 17,
+            OBJVRAMMODE_CHAR_1D_128K = 18,
+            OBJVRAMMODE_CHAR_1D_256K = 19
+        }
+
+        public enum CharacterDataMapingType
+        {
+            CHARACTERMAPING_1D_32,
+            CHARACTERMAPING_1D_64,
+            CHARACTERMAPING_1D_128,
+            CHARACTERMAPING_1D_256,
+            CHARACTERMAPING_2D,
+            CHARACTERMAPING_MAX
+        }
+
+        public enum G2DColorMode
+        {
+            SCREENCOLORMODE_16x16,
+            SCREENCOLORMODE_256x1,
+            SCREENCOLORMODE_256x16
+        }
+
+        public enum ScreenFormat
+        {
+            SCREENFORMAT_TEXT,
+            SCREENFORMAT_AFFINE,
+            SCREENFORMAT_AFFINEEXT
+        }
+
+        [Flags]
+        public enum ParticleFlags : uint
+        {
+            Type0 = 0,
+            Type1 = 0x10,
+            Type2 = 0x20,
+            Type3 = 0x30,
+            Bit8 = 0x100,
+            Bit9 = 0x200,
+            Bit10 = 0x400,
+            TextureAnimation = 0x800,
+            Bit16 = 0x10000,
+            Bit21 = 0x200000,
+            Bit22 = 0x400000,
+            Bit23 = 0x800000,
+            Bit24 = 0x1000000,
+            Bit25 = 0x2000000,
+            Bit26 = 0x4000000,
+            Bit27 = 0x8000000,
+            Bit28 = 0x10000000,
+            Bit29 = 0x20000000
+        }
+
+        public static Bitmap ToBitmap(byte[] Data, byte[] Palette, int PaletteNr, int Width, int Height, ImageFormat Type, CharFormat CharacterType, bool cut = true, bool firstTransparent = false)
 		{
-			return ToBitmap(Data, Palette, new byte[0], PaletteNr, Width, Height, Type, CharacterType, firstTransparent);//, cut);
+			return ToBitmap(Data, Palette, new byte[0], PaletteNr, Width, Height, Type, CharacterType, firstTransparent, cut);
 		}
-		public static Bitmap ToBitmap(byte[] Data, byte[] Palette, byte[] Tex4x4, int PaletteNr, int Width, int Height, ImageFormat Type, CharFormat CharacterType, bool firstTransparent = false)//, bool cut = true)
+		public static Bitmap ToBitmap(byte[] Data, byte[] Palette, byte[] Tex4x4, int PaletteNr, int Width, int Height, ImageFormat Type, CharFormat CharacterType, bool firstTransparent = false, bool cut = true)
 		{
 			Bitmap b = null;
 			int offset = 0;
@@ -352,14 +410,227 @@ namespace NDS.GPU
 						break;
 					}
 			}
-			//if (CharacterType == NNSG2dCharacterFmt.NNS_G2D_CHARACTER_FMT_CHAR && cut)
-			//{
-			//	b = CutImage(b, Width, 1);
-			//}
+			if (CharacterType == CharFormat.CHAR && cut)
+			{
+				b = CutImage(b, Width, 1);
+			}
 			return b;
 		}
 
-		public static Color[] ConvertABGR1555(byte[] Data)
+        public static Bitmap ToBitmap(byte[] Data, int Width, int Height, byte[] Palette, byte[] ScreenData, int ScreenWidth, int ScreenHeight, ImageFormat Type, CharFormat CharacterType)
+        {
+            const int TILE_SIZE = 8;
+            const int TILE_INDEX_MASK = 0x3FF;
+            const int HORIZONTAL_FLIP_BIT = 10;
+            const int VERTICAL_FLIP_BIT = 11; 
+            const int PALETTE_INDEX_SHIFT = 12;
+            const int TILE_OFFSET_ADJUST_1 = 576;
+            const int TILE_OFFSET_ADJUST_2 = 256;
+            const int PALETTE_CHECK_BIT = 0x10;
+            Bitmap screenBitmap = new Bitmap(ScreenData.Length / 2 * TILE_SIZE, TILE_SIZE);
+            List<Bitmap> textureBitmaps = new List<Bitmap>();
+            List<BitmapData> textureBitmapDatas = new List<BitmapData>();
+            int paletteCount = Palette.Length / 2 / ((Type == ImageFormat.PLTT16) ? 16 : 256);
+            for (int paletteIndex = 0; paletteIndex < paletteCount; paletteIndex++)
+            {
+                textureBitmaps.Add(ToBitmap(Data, Palette, paletteIndex, Width, Height, Type, CharacterType, cut: false));
+                textureBitmapDatas.Add(
+                    textureBitmaps[paletteIndex].LockBits(
+                        new Rectangle(0, 0, textureBitmaps[paletteIndex].Width, textureBitmaps[paletteIndex].Height),
+                        ImageLockMode.ReadOnly,
+                        PixelFormat.Format32bppArgb
+                    )
+                );
+            }
+            BitmapData screenBitmapData = screenBitmap.LockBits(
+                new Rectangle(0, 0, ScreenData.Length / 2 * TILE_SIZE, TILE_SIZE),
+                ImageLockMode.WriteOnly,
+                PixelFormat.Format32bppArgb
+            );
+
+            for (int screenDataIndex = 0; screenDataIndex < ScreenData.Length / 2; screenDataIndex++)
+            {
+                ushort screenDataValue = IOUtil.ReadU16LE(ScreenData, screenDataIndex * 2);
+                int tileIndex = screenDataValue & TILE_INDEX_MASK;
+                bool isHorizontallyFlipped = ((screenDataValue >> HORIZONTAL_FLIP_BIT) & 1) == 1;
+                bool isVerticallyFlipped = ((screenDataValue >> VERTICAL_FLIP_BIT) & 1) == 1;
+                int paletteIndex = screenDataValue >> PALETTE_INDEX_SHIFT;
+                if (tileIndex > textureBitmaps[0].Width / TILE_SIZE)
+                {
+                    paletteIndex = ((((screenDataValue >> 8) & PALETTE_CHECK_BIT) != 0) ? 1 : 0);
+                    tileIndex -= TILE_OFFSET_ADJUST_1;
+
+                    if (tileIndex < 0)
+                    {
+                        tileIndex += TILE_OFFSET_ADJUST_1;
+                        tileIndex -= TILE_OFFSET_ADJUST_2;
+                    }
+                }
+                int tileY = (isVerticallyFlipped ? TILE_SIZE - 1 : 0);
+                int destY = 0;
+                while ((isVerticallyFlipped ? (tileY >= 0) : (tileY < TILE_SIZE)) && destY < TILE_SIZE)
+                {
+                    int tileX = (isHorizontallyFlipped ? TILE_SIZE - 1 : 0);
+                    int destX = 0;
+
+                    while ((isHorizontallyFlipped ? (tileX >= 0) : (tileX < TILE_SIZE)) && destX < TILE_SIZE)
+                    {
+                        int sourcePixelAddress = tileY * textureBitmapDatas[paletteIndex].Stride + tileIndex * TILE_SIZE * 4 + tileX * 4;
+                        int destPixelAddress = destY * screenBitmapData.Stride + screenDataIndex * TILE_SIZE * 4 + destX * 4;
+                        Marshal.WriteInt32(
+                            screenBitmapData.Scan0,
+                            destPixelAddress,
+                            Marshal.ReadInt32(textureBitmapDatas[paletteIndex].Scan0, sourcePixelAddress)
+                        );
+                        tileX += ((!isHorizontallyFlipped) ? 1 : (-1));
+                        destX++;
+                    }
+                    tileY += ((!isVerticallyFlipped) ? 1 : (-1));
+                    destY++;
+                }
+            }
+            screenBitmap.UnlockBits(screenBitmapData);
+            for (int paletteIndex = 0; paletteIndex < paletteCount; paletteIndex++)
+            {
+                textureBitmaps[paletteIndex].UnlockBits(textureBitmapDatas[paletteIndex]);
+            }
+            return CutImage(screenBitmap, ScreenWidth, 1);
+        }
+
+        public static Bitmap ToBitmap(byte[] Data, byte[] Palette, int Width, int Height, NCER.cellDataBank.cellData cellData,CharacterDataMapingType mappingMode, ImageFormat type, CharFormat characterType)
+        {
+            const int TILE_SIZE = 8;
+            const int BASE_CANVAS_WIDTH = 512;
+            const int BASE_CANVAS_HEIGHT = 256;
+            const int COORD_ADJUST_Y = 128;
+            const int COORD_ADJUST_X = 256;
+            const int FLIP_DIRECTION_NEGATIVE = -1;
+            Bitmap baseCanvas = new Bitmap(BASE_CANVAS_WIDTH, BASE_CANVAS_HEIGHT);
+            List<Bitmap> normalTextureBitmaps = new List<Bitmap>();
+            List<Bitmap> transparentTextureBitmaps = new List<Bitmap>();
+            int paletteCount = Palette.Length / 2 / ((type == ImageFormat.PLTT16) ? 16 : 256);
+            for (int paletteIndex = 0; paletteIndex < paletteCount; paletteIndex++)
+            {
+                normalTextureBitmaps.Add(ToBitmap(Data, Palette, paletteIndex, Width, Height, type, characterType, cut: false));
+                transparentTextureBitmaps.Add(ToBitmap(Data, Palette, paletteIndex, Width, Height, type, characterType, cut: false, firstTransparent: true));
+            }
+            using (Graphics graphics = Graphics.FromImage(baseCanvas))
+            {
+                foreach (NCER.cellDataBank.cellData.cellOAMAttrData oamAttr in cellData.CellOAMAttrData)
+                {
+                    Size objSize = oamAttr.GetSize();
+                    int tileRowIndex = oamAttr.StartingCharacterName * TILE_SIZE /((mappingMode == CharacterDataMapingType.CHARACTERMAPING_2D) ? Width : objSize.Width);
+                    int tileColumnOffset = oamAttr.StartingCharacterName * TILE_SIZE - tileRowIndex * ((mappingMode == CharacterDataMapingType.CHARACTERMAPING_2D) ? Width : objSize.Width);
+                    int yCoord = oamAttr.YCoord;
+                    int xCoord = oamAttr.XCoord;
+                    yCoord = ((yCoord >> 7 != 1) ? (yCoord + COORD_ADJUST_Y) : (yCoord - COORD_ADJUST_Y));
+                    xCoord = ((xCoord >> 8 != 1) ? (xCoord + COORD_ADJUST_X) : (xCoord - COORD_ADJUST_X));
+                    if (objSize.Width + tileColumnOffset > ((mappingMode == CharacterDataMapingType.CHARACTERMAPING_2D) ? Width : objSize.Width))
+                    {
+                        int currentColumnOffset = tileColumnOffset;
+                        int currentRowIndex = tileRowIndex;
+                        int drawX = xCoord;
+                        int blockCount = objSize.Width / (objSize.Width - tileColumnOffset);
+                        for (int blockIndex = 0; blockIndex < blockCount; blockIndex++)
+                        {
+                            Bitmap textureBitmap = (oamAttr.OBJMode == 1) ?transparentTextureBitmaps[oamAttr.ColorParameter] : normalTextureBitmaps[oamAttr.ColorParameter];
+                            int blockWidth = objSize.Width - tileColumnOffset;
+                            graphics.DrawImage(CutImage(textureBitmap,(mappingMode == CharacterDataMapingType.CHARACTERMAPING_2D) ? Width : objSize.Width, 1),
+                                new Rectangle(drawX, yCoord, blockWidth, objSize.Height),
+                                new Rectangle(currentColumnOffset, currentRowIndex * TILE_SIZE, blockWidth, objSize.Height),
+                                GraphicsUnit.Pixel);
+                            if (currentColumnOffset + blockWidth == objSize.Width)
+                            {
+                                currentRowIndex++;
+                                currentColumnOffset = 0;
+                            }
+                            drawX += blockWidth;
+                        }
+                    }
+                    else if (oamAttr.FlipX && oamAttr.FlipY)
+                    {
+                        DrawFlippedTexture(graphics, oamAttr, normalTextureBitmaps, transparentTextureBitmaps,
+                                          mappingMode, Width, objSize, tileColumnOffset, tileRowIndex,
+                                          xCoord, yCoord, FLIP_DIRECTION_NEGATIVE, FLIP_DIRECTION_NEGATIVE);
+                    }
+                    else if (oamAttr.FlipX)
+                    {
+                        DrawFlippedTexture(graphics, oamAttr, normalTextureBitmaps, transparentTextureBitmaps,
+                                          mappingMode, Width, objSize, tileColumnOffset, tileRowIndex,
+                                          xCoord, yCoord, FLIP_DIRECTION_NEGATIVE, 1);
+                    }
+                    else if (oamAttr.FlipY)
+                    {
+                        DrawFlippedTexture(graphics, oamAttr, normalTextureBitmaps, transparentTextureBitmaps,
+                                          mappingMode, Width, objSize, tileColumnOffset, tileRowIndex,
+                                          xCoord, yCoord, 1, FLIP_DIRECTION_NEGATIVE);
+                    }
+                    else
+                    {
+                        Bitmap textureBitmap = (oamAttr.OBJMode == 1) ?transparentTextureBitmaps[oamAttr.ColorParameter] : normalTextureBitmaps[oamAttr.ColorParameter];
+                        graphics.DrawImage(CutImage(textureBitmap, (mappingMode == CharacterDataMapingType.CHARACTERMAPING_2D) ? Width : objSize.Width, 1),
+                            new Rectangle(xCoord, yCoord, objSize.Width, objSize.Height),
+                            new Rectangle(tileColumnOffset, tileRowIndex * TILE_SIZE, objSize.Width, objSize.Height),
+                            GraphicsUnit.Pixel);
+                    }
+                }
+            }
+
+            if (cellData.boundingRect != null)
+            {
+                int boundWidth = cellData.boundingRect.maxX - cellData.boundingRect.minX;
+                int boundHeight = cellData.boundingRect.maxY - cellData.boundingRect.minY;
+
+                Bitmap boundedBitmap = new Bitmap(boundWidth, boundHeight);
+                using (Graphics graphics = Graphics.FromImage(boundedBitmap))
+                {
+                    graphics.DrawImage(baseCanvas,
+                        new Rectangle(0, 0, boundWidth, boundHeight),
+                        new Rectangle(COORD_ADJUST_X - boundWidth / 2, COORD_ADJUST_Y - boundHeight / 2, boundWidth, boundHeight),
+                        GraphicsUnit.Pixel);
+                }
+                baseCanvas = boundedBitmap;
+            }
+            return baseCanvas;
+        }
+
+        private static void DrawFlippedTexture(Graphics graphics, NCER.cellDataBank.cellData.cellOAMAttrData oamAttr,List<Bitmap> normalTextures, List<Bitmap> transparentTextures,CharacterDataMapingType mappingMode, int width, Size objSize,int tileColumnOffset, int tileRowIndex, int xCoord, int yCoord,int xScale, int yScale)
+        {
+            const int TILE_SIZE = 8;
+            Bitmap textureBitmap = (oamAttr.OBJMode == 1) ? transparentTextures[oamAttr.ColorParameter] : normalTextures[oamAttr.ColorParameter];
+            int destX = xCoord + (xScale < 0 ? objSize.Width : 0);
+            int destY = yCoord + (yScale < 0 ? objSize.Height : 0);
+            graphics.DrawImage(CutImage(textureBitmap, (mappingMode == CharacterDataMapingType.CHARACTERMAPING_2D) ? width : objSize.Width, 1),
+                new Rectangle(destX, destY, objSize.Width * xScale, objSize.Height * yScale),
+                new Rectangle(tileColumnOffset, tileRowIndex * TILE_SIZE, objSize.Width, objSize.Height),
+                GraphicsUnit.Pixel);
+        }
+
+        private static Bitmap CutImage(Image sourceImage, int targetWidth, int blockRowCount)
+        {
+            int blockHeight = sourceImage.Height / blockRowCount;
+            int sourceBlockCount = sourceImage.Width / blockHeight;
+            int targetBlockCount = targetWidth / blockHeight;
+            int blockGroupCount = sourceBlockCount / targetBlockCount;
+            Bitmap targetImage = new Bitmap(targetBlockCount * blockHeight, blockGroupCount * blockHeight * blockRowCount);
+            Graphics graphics = Graphics.FromImage(targetImage);
+            graphics.Clear(Color.Transparent);
+            Rectangle sourceRect = new Rectangle(0, 0, targetBlockCount * blockHeight, blockHeight);
+            Rectangle destRect = new Rectangle(0, 0, targetBlockCount * blockHeight, blockHeight);
+            for (int blockRowIndex = 0; blockRowIndex < blockRowCount; blockRowIndex++)
+            {
+                sourceRect.Y = blockRowIndex * blockHeight;
+                for (int blockGroupIndex = 0; blockGroupIndex < blockGroupCount; blockGroupIndex++)
+                {
+                    sourceRect.X = blockGroupIndex * targetBlockCount * blockHeight;
+                    destRect.Y = blockGroupIndex * blockHeight + blockRowIndex * blockGroupCount * blockHeight;
+                    graphics.DrawImage(sourceImage, destRect, sourceRect, GraphicsUnit.Pixel);
+                }
+            }
+            return targetImage;
+        }
+
+        public static Color[] ConvertABGR1555(byte[] Data)
 		{
 			Color[] data = new Color[Data.Length / 2];
 			for (int i = 0; i < Data.Length; i += 2)
