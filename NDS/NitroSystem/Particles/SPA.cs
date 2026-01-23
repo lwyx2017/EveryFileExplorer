@@ -78,28 +78,6 @@ namespace NDS.NitroSystem.Particles
 
         public class Particle
         {
-            [Flags]
-            public enum ParticleFlags : uint
-            {
-                Type0 = 0u,
-                Type1 = 0x10u,
-                Type2 = 0x20u,
-                Type3 = 0x30u,
-                Bit8 = 0x100u,
-                Bit9 = 0x200u,
-                Bit10 = 0x400u,
-                TextureAnimation = 0x800u,
-                Bit16 = 0x10000u,
-                Bit21 = 0x200000u,
-                Bit22 = 0x400000u,
-                Bit23 = 0x800000u,
-                Bit24 = 0x1000000u,
-                Bit25 = 0x2000000u,
-                Bit26 = 0x4000000u,
-                Bit27 = 0x8000000u,
-                Bit28 = 0x10000000u,
-                Bit29 = 0x20000000u
-            }
             public class Bit_9
             {
                 public Bit_9(EndianBinaryReader er)
@@ -118,7 +96,7 @@ namespace NDS.NitroSystem.Particles
             }
             public Particle(EndianBinaryReader er)
             {
-                Flag = (ParticleFlags)er.ReadUInt32();
+                Flag = (Textures.ParticleFlags)er.ReadUInt32();
                 Position = new Vector3(er.ReadSingle(), er.ReadSingle(), er.ReadSingle());
                 Unknown1 = er.ReadSingle();
                 Unknown2 = er.ReadSingle();
@@ -146,52 +124,52 @@ namespace NDS.NitroSystem.Particles
                 Unknown23 = er.ReadUInt16();
                 Unknown24 = er.ReadUInt16();
                 Unknown25 = er.ReadUInt32();
-                if ((Flag & ParticleFlags.Bit8) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit8) != Textures.ParticleFlags.Type0)
                 {
                     Bit8 = er.ReadBytes(12);
                 }
-                if ((Flag & ParticleFlags.Bit9) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit9) != Textures.ParticleFlags.Type0)
                 {
                     Bit9 = new Bit_9(er);
                 }
-                if ((Flag & ParticleFlags.Bit10) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit10) != Textures.ParticleFlags.Type0)
                 {
                     Bit10 = er.ReadBytes(8);
                 }
-                if ((Flag & ParticleFlags.TextureAnimation) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.TextureAnimation) != Textures.ParticleFlags.Type0)
                 {
                     TexAnim = new TextureAnimation(er);
                 }
-                if ((Flag & ParticleFlags.Bit16) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit16) != Textures.ParticleFlags.Type0)
                 {
                     Bit16 = er.ReadBytes(20);
                 }
-                if ((Flag & ParticleFlags.Bit24) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit24) != Textures.ParticleFlags.Type0)
                 {
                     Bit24 = er.ReadBytes(8);
                 }
-                if ((Flag & ParticleFlags.Bit25) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit25) != Textures.ParticleFlags.Type0)
                 {
                     Bit25 = er.ReadBytes(8);
                 }
-                if ((Flag & ParticleFlags.Bit26) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit26) != Textures.ParticleFlags.Type0)
                 {
                     Bit26 = er.ReadBytes(16);
                 }
-                if ((Flag & ParticleFlags.Bit27) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit27) != Textures.ParticleFlags.Type0)
                 {
                     Bit27 = er.ReadBytes(4);
                 }
-                if ((Flag & ParticleFlags.Bit28) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit28) != Textures.ParticleFlags.Type0)
                 {
                     Bit28 = er.ReadBytes(8);
                 }
-                if ((Flag & ParticleFlags.Bit29) != ParticleFlags.Type0)
+                if ((Flag & Textures.ParticleFlags.Bit29) != Textures.ParticleFlags.Type0)
                 {
                     Bit29 = er.ReadBytes(16);
                 }
             }
-            public ParticleFlags Flag;
+            public Textures.ParticleFlags Flag;
             public Vector3 Position;
             public float Unknown1;
             public float Unknown2;
@@ -293,7 +271,8 @@ namespace NDS.NitroSystem.Particles
             public Bitmap ToBitmap()
             {
                 bool firstTransparent = (Unknown1 != 0);
-                return Textures.ToBitmap(ImageData,PaletteData,0,Width,Height,TextureFormat,Textures.CharFormat.BMP,firstTransparent);
+                bool cut = false;
+                return Textures.ToBitmap(ImageData,PaletteData,0,Width,Height,TextureFormat,Textures.CharFormat.BMP, cut, firstTransparent);
             }
         }
 
