@@ -77,6 +77,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="NAudio">
+      <HintPath>..\Libraries\NAudio.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -91,7 +94,7 @@
     <Compile Include="GCNWiiPlugin.cs" />
     <Compile Include="GPU\Textures.cs" />
     <Compile Include="JSystem\BTI.cs" />
-    <Compile Include="JSystem\THP\THP.cs" />
+    <Compile Include="JSystem\THP.cs" />
     <Compile Include="NintendoWare\FONT\RFNT.cs" />
     <Compile Include="NintendoWare\LYT\RLAN.cs" />
     <Compile Include="NintendoWare\LYT\RLYT.cs" />
@@ -109,6 +112,12 @@
     </Compile>
     <Compile Include="UI\BTIGenDialog.Designer.cs">
       <DependentUpon>BTIGenDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\THPViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\THPViewer.Designer.cs">
+      <DependentUpon>THPViewer.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\TPLGenDialog.cs">
       <SubType>Form</SubType>
@@ -154,6 +163,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\BTIGenDialog.resx">
       <DependentUpon>BTIGenDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\THPViewer.resx">
+      <DependentUpon>THPViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\TPLGenDialog.resx">
       <DependentUpon>TPLGenDialog.cs</DependentUpon>
