@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using NAudio.Wave;
 using System.IO;
@@ -27,35 +21,54 @@ namespace CommonFiles.UI
 			Output.NumberOfBuffers = 10;
 		}
 
-		public void SetWavFile(WAV Wave)
-		{
-			if (Wave.Wave.FMT.NrChannel > 2)
-			{
-				byte[] left = Wave.GetChannelData(0);
-				byte[] right = Wave.GetChannelData(1);
-				WAV wav2 = new WAV(SNDUtil.InterleaveChannels(IOUtil.ReadS16sLE(left, 0, left.Length / 2), IOUtil.ReadS16sLE(right, 0, right.Length / 2)), Wave.Wave.FMT.SampleRate, 16, 2);
-				Stream = new WaveFileReader(new MemoryStream(wav2.Write()));
-			}
-			else
-			{
-				Stream = new WaveFileReader(new MemoryStream(Wave.Write()));
-			}
-			Output.Init(Stream);
-			trackBar1.Maximum = (int)Math.Ceiling(Stream.TotalTime.TotalSeconds);
-		}
+        public void InitWaveOut()
+        {
+            if (Output == null)
+            {
+                Output = new WaveOut();
+                Output.NumberOfBuffers = 10;
+            }
+        }
 
-		public void Stop()
-		{
-			Output.Stop();
-			Stream.Close();
-			Stream.Dispose();
-			Stream = null;
-			Output = new WaveOut();
-			timer1.Stop();
-			timer1.Enabled = false;
-		}
+        public void SetWavFile(WAV Wave)
+        {
+            InitWaveOut();
+            if (Wave.Wave.FMT.NrChannel > 2)
+            {
+                byte[] left = Wave.GetChannelData(0);
+                byte[] right = Wave.GetChannelData(1);
+                WAV wav2 = new WAV(SNDUtil.InterleaveChannels(IOUtil.ReadS16sLE(left, 0, left.Length / 2), IOUtil.ReadS16sLE(right, 0, right.Length / 2)), Wave.Wave.FMT.SampleRate, 16, 2);
+                Stream = new WaveFileReader(new MemoryStream(wav2.Write()));
+            }
+            else
+            {
+                Stream = new WaveFileReader(new MemoryStream(Wave.Write()));
+            }
+            Output.Init(Stream);
+            trackBar1.Maximum = (int)Math.Ceiling(Stream.TotalTime.TotalSeconds);
+        }
 
-		private void button1_Click(object sender, EventArgs e)
+        public void Stop()
+        {
+            if (Output.PlaybackState != PlaybackState.Stopped)
+            {
+                Output.Stop();
+            }
+            if (Stream != null)
+            {
+                Stream.Close();
+                Stream.Dispose();
+                Stream = null;
+            }
+            Output.Dispose();
+            Output = null;
+            timer1.Stop();
+            timer1.Enabled = false;
+            IsPlaying = false;
+            button1.Image = Resource.control;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
 		{
 			if (IsPlaying)
 			{
