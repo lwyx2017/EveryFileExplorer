@@ -154,6 +154,18 @@
     <Compile Include="UI\FileBrowser.Designer.cs">
       <DependentUpon>FileBrowser.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\FontPreviewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\FontPreviewer.Designer.cs">
+      <DependentUpon>FontPreviewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\FontTextureGlyphViewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\FontTextureGlyphViewer.Designer.cs">
+      <DependentUpon>FontTextureGlyphViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\GameDataSectionViewer.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -183,6 +195,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\FileBrowser.resx">
       <DependentUpon>FileBrowser.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\FontPreviewer.resx">
+      <DependentUpon>FontPreviewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\FontTextureGlyphViewer.resx">
+      <DependentUpon>FontTextureGlyphViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\GameDataSectionViewer.resx">
       <DependentUpon>GameDataSectionViewer.cs</DependentUpon>
