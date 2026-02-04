@@ -605,7 +605,7 @@ namespace _3DS.GPU
                     case ImageFormat.RGBA5551:
                         for (int y = 0; y < ConvHeight; y += 8)
                         {
-                            for (int x = 0; x < ConvHeight; x += 8)
+                            for (int x = 0; x < ConvWidth; x += 8)
                             {
                                 for (int i = 0; i < 64; i++)
                                 {
