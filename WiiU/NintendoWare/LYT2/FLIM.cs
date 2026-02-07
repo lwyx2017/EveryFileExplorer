@@ -102,59 +102,59 @@ namespace WiiU.NintendoWare.LYT2
                 {
                     case 0:
                         Image.Format = 9;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA8, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA8, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 1:
                         Image.Format = 6;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGB8, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGB8, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 2:
                         Image.Format = 7;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA5551, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA5551, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 3:
                         Image.Format = 5;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGB565, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGB565, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 4:
                         Image.Format = 8;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA4, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.RGBA4, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 5:
                         Image.Format = 3;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.LA8, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.LA8, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 6:
                         Image.Format = 4;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.HILO8, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.HILO8, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 7:
                         Image.Format = 0;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.L8, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.L8, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 8:
                         Image.Format = 1;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.A8, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.A8, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 9:
                         Image.Format = 2;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.LA4, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.LA4, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 10:
                         Image.Format = 0x12;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.L4, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.L4, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 11:
                         Image.Format = 0x13;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.A4, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.A4, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 12:
                         Image.Format = 10;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.ETC1, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.ETC1, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     case 13:
                         Image.Format = 11;
-                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.ETC1A4, Image.Flag);
+                        Data = _3DS.GPU.Textures.FromBitmap(bitmap, _3DS.GPU.Textures.ImageFormat.ETC1A4, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                         break;
                     default:
                         throw new Exception("Please select the Image format!");
@@ -265,16 +265,11 @@ namespace WiiU.NintendoWare.LYT2
                     case 0x13: f3 = _3DS.GPU.Textures.ImageFormat.A4; break;
                     default: throw new Exception("Unknown Image Format!");
                 }
-                switch (Image.Flag)
+                if (Image.Flag == 0 || Image.Flag == 2)
                 {
-                    case 2:
-                        return _3DS.GPU.Textures.ToBitmap(Data, Image.Width, Image.Height, f3, Image.Flag);
-                    case 4:
-                    case 8:
-                        return _3DS.GPU.Textures.ToBitmap(Data, Image.Height, Image.Width, f3, Image.Flag);
-                    default:
-                        return _3DS.GPU.Textures.ToBitmap(Data, Image.Width, Image.Height, f3);
+                    return _3DS.GPU.Textures.ToBitmap(Data, Image.Width, Image.Height, f3, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
                 }
+                else return _3DS.GPU.Textures.ToBitmap(Data, Image.Height, Image.Width, f3, (_3DS.GPU.Textures.ImageFlag)Image.Flag);
             }
             else
             {
@@ -318,7 +313,7 @@ namespace WiiU.NintendoWare.LYT2
                 R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT Out = Textures.CalculateParameters(
                 Textures.GetTextureFormatConstant(fu), Image.Width, Image.Height, Depth, Dim, (Textures.TileMode)TileMode, (Textures.AAMode)AA, MipLevel);
                 Bitmap bmp = null;
-                bmp = Textures.ToBitmap(Textures.Deswizzle(Data, Image.Width, Image.Height, 
+                bmp = Textures.ToBitmap(Textures.Deswizzle(Data, Image.Width, Image.Height,
                 Textures.GetTextureFormatConstant(fu), (Textures.TileMode)TileMode, Swizzle, Out.Pitch, Depth, Dim, (Textures.AAMode)AA, MipLevel),
                 Image.Width, Image.Height, fu);
                 return bmp;

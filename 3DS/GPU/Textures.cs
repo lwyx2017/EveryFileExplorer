@@ -8,6 +8,14 @@ namespace _3DS.GPU
 {
     public class Textures
     {
+        public enum ImageFlag : uint
+        {
+            None = 0,
+            FlipY = 2,
+            Rotate90 = 4,
+            Transpose = 8
+        }
+
         public enum ImageFormat : uint
         {
             RGBA8 = 0,
@@ -30,10 +38,14 @@ namespace _3DS.GPU
 
         private static readonly int[] TileOrder =
         {
-             0,  1,   4,  5,
-             2,  3,   6,  7,
-             8,  9,  12, 13,
-            10, 11,  14, 15
+            0,  1,  4,  5, 16, 17, 20, 21,
+            2,  3,  6,  7, 18, 19, 22, 23,
+            8,  9, 12, 13, 24, 25, 28, 29,
+            10, 11, 14, 15, 26, 27, 30, 31,
+            32, 33, 36, 37, 48, 49, 52, 53,
+            34, 35, 38, 39, 50, 51, 54, 55,
+            40, 41, 44, 45, 56, 57, 60, 61,
+            42, 43, 46, 47, 58, 59, 62, 63
         };
 
         private static readonly int[,] ETC1Modifiers =
@@ -67,398 +79,381 @@ namespace _3DS.GPU
                 Height = 1 << (int)Math.Ceiling(Math.Log(Height, 2));
             }
             Bitmap bitm = new Bitmap(physicalwidth, physicalheight);
-            BitmapData d = bitm.LockBits(new Rectangle(0, 0, bitm.Width, bitm.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-            uint* res = (uint*)d.Scan0;
-            int offs = Offset;//0;
-            int stride = d.Stride / 4;
-            switch (Format)
+            BitmapData d = null;
+            try
             {
-                case ImageFormat.RGBA8:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                res[(y + y2) * stride + x + x2] =
-                                    GFXUtil.ConvertColorFormat(
-                                        IOUtil.ReadU32LE(Data, offs + pos * 4),
-                                        ColorFormat.RGBA8888,
-                                        ColorFormat.ARGB8888);
-                                /*GFXUtil.ToArgb(
-								Data[offs + pos * 4],
-								Data[offs + pos * 4 + 3],
-								Data[offs + pos * 4 + 2],
-								Data[offs + pos * 4 + 1]
-								);*/
-                            }
-                            offs += 64 * 4;
-                        }
-                    }
-                    break;
-                case ImageFormat.RGB8:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                res[(y + y2) * stride + x + x2] =
-                                    GFXUtil.ConvertColorFormat(
-                                        IOUtil.ReadU24LE(Data, offs + pos * 3),
-                                        ColorFormat.RGB888,
-                                        ColorFormat.ARGB8888);
-                                /*GFXUtil.ToArgb(
-								Data[offs + pos * 3 + 2],
-								Data[offs + pos * 3 + 1],
-								Data[offs + pos * 3 + 0]
-								);*/
-                            }
-                            offs += 64 * 3;
-                        }
-                    }
-                    break;
-                case ImageFormat.RGBA5551:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                res[(y + y2) * stride + x + x2] =
-                                    GFXUtil.ConvertColorFormat(
-                                        IOUtil.ReadU16LE(Data, offs + pos * 2),
-                                        ColorFormat.RGBA5551,
-                                        ColorFormat.ARGB8888);
-                                //GFXUtil.RGBA5551ToArgb(IOUtil.ReadU16LE(Data, offs + pos * 2));
-                            }
-                            offs += 64 * 2;
-                        }
-                    }
-                    break;
-                case ImageFormat.RGB565:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                res[(y + y2) * stride + x + x2] =
-                                    GFXUtil.ConvertColorFormat(
-                                        IOUtil.ReadU16LE(Data, offs + pos * 2),
-                                        ColorFormat.RGB565,
-                                        ColorFormat.ARGB8888);
-                                //GFXUtil.RGB565ToArgb(IOUtil.ReadU16LE(Data, offs + pos * 2));
-                            }
-                            offs += 64 * 2;
-                        }
-                    }
-                    break;
-                case ImageFormat.RGBA4:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                res[(y + y2) * stride + x + x2] =
-                                    GFXUtil.ConvertColorFormat(
-                                        IOUtil.ReadU16LE(Data, offs + pos * 2),
-                                        ColorFormat.RGBA4444,
-                                        ColorFormat.ARGB8888);
-                                /*GFXUtil.ToArgb(
-								(byte)((Data[offs + pos * 2] & 0xF) * 0x11),
-								(byte)((Data[offs + pos * 2 + 1] >> 4) * 0x11),
-								(byte)((Data[offs + pos * 2 + 1] & 0xF) * 0x11),
-								(byte)((Data[offs + pos * 2] >> 4) * 0x11)
-								);*/
-                            }
-                            offs += 64 * 2;
-                        }
-                    }
-                    break;
-                case ImageFormat.LA8:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                ushort pixel = IOUtil.ReadU16LE(Data, offs + pos * 2);
-                                res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
-                                    (byte)(pixel & 0xFF),
-                                    (byte)((pixel >> 8) & 0xFF),
-                                    (byte)((pixel >> 8) & 0xFF),
-                                    (byte)((pixel >> 8) & 0xFF),
-                                    ColorFormat.ARGB8888
-                                    );
-                            }
-                            offs += 64 * 2;
-                        }
-                    }
-                    break;
-                case ImageFormat.HILO8:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                ushort pixel = IOUtil.ReadU16LE(Data, offs + pos * 2);
-                                res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
-                                    255,
-                                    (byte)(pixel >> 8),
-                                    (byte)(pixel & 0xFF),
-                                    255,
-                                    ColorFormat.ARGB8888
-                                );
-                            }
-                            offs += 64 * 2;
-                        }
-                    }
-                    break;
-                case ImageFormat.L8:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
-                                    Data[offs + pos],
-                                    Data[offs + pos],
-                                    Data[offs + pos],
-                                    ColorFormat.ARGB8888
-                                    );
-                            }
-                            offs += 64;
-                        }
-                    }
-                    break;
-                case ImageFormat.A8:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
-                                    Data[offs + pos],
-                                    255,
-                                    255,
-                                    255,
-                                    ColorFormat.ARGB8888
-                                    );
-                            }
-                            offs += 64;
-                        }
-                    }
-                    break;
-                case ImageFormat.LA4:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
-                                    (byte)((Data[offs + pos] & 0xF) * 0x11),
-                                    (byte)((Data[offs + pos] >> 4) * 0x11),
-                                    (byte)((Data[offs + pos] >> 4) * 0x11),
-                                    (byte)((Data[offs + pos] >> 4) * 0x11),
-                                    ColorFormat.ARGB8888
-                                    );
-                            }
-                            offs += 64;
-                        }
-                    }
-                    break;
-                case ImageFormat.L4:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                int shift = (pos & 1) * 4;
-                                res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
-                                    (byte)(((Data[offs + pos / 2] >> shift) & 0xF) * 0x11),
-                                    (byte)(((Data[offs + pos / 2] >> shift) & 0xF) * 0x11),
-                                    (byte)(((Data[offs + pos / 2] >> shift) & 0xF) * 0x11),
-                                    ColorFormat.ARGB8888
-                                    );
-                            }
-                            offs += 64 / 2;
-                        }
-                    }
-                    break;
-                case ImageFormat.A4:
-                    for (int y = 0; y < Height; y += 8)
-                    {
-                        for (int x = 0; x < Width; x += 8)
-                        {
-                            for (int i = 0; i < 64; i++)
-                            {
-                                int x2 = i % 8;
-                                if (x + x2 >= physicalwidth) continue;
-                                int y2 = i / 8;
-                                if (y + y2 >= physicalheight) continue;
-                                int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
-                                int shift = (pos & 1) * 4;
-                                res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
-                                    (byte)(((Data[offs + pos / 2] >> shift) & 0xF) * 0x11),
-                                    255,
-                                    255,
-                                    255,
-                                    ColorFormat.ARGB8888
-                                    );
-                            }
-                            offs += 64 / 2;
-                        }
-                    }
-                    break;
-                case ImageFormat.ETC1://Some reference: http://www.khronos.org/registry/gles/extensions/OES/OES_compressed_ETC1_RGB8_texture.txt
-                case ImageFormat.ETC1A4:
-                    {
+                d = bitm.LockBits(new Rectangle(0, 0, bitm.Width, bitm.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+                uint* res = (uint*)d.Scan0;
+                int offs = Offset;
+                int stride = d.Stride / 4;
+                switch (Format)
+                {
+                    case ImageFormat.RGBA8:
                         for (int y = 0; y < Height; y += 8)
                         {
                             for (int x = 0; x < Width; x += 8)
                             {
-                                for (int i = 0; i < 8; i += 4)
+                                for (int i = 0; i < 64; i++)
                                 {
-                                    for (int j = 0; j < 8; j += 4)
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    res[(y + y2) * stride + x + x2] =
+                                        GFXUtil.ConvertColorFormat(
+                                            IOUtil.ReadU32LE(Data, offs + pos * 4),
+                                            ColorFormat.RGBA8888,
+                                            ColorFormat.ARGB8888);
+                                }
+                                offs += 64 * 4;
+                            }
+                        }
+                        break;
+                    case ImageFormat.RGB8:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    res[(y + y2) * stride + x + x2] =
+                                        GFXUtil.ConvertColorFormat(
+                                            IOUtil.ReadU24LE(Data, offs + pos * 3),
+                                            ColorFormat.RGB888,
+                                            ColorFormat.ARGB8888);
+                                }
+                                offs += 64 * 3;
+                            }
+                        }
+                        break;
+                    case ImageFormat.RGBA5551:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    res[(y + y2) * stride + x + x2] =
+                                        GFXUtil.ConvertColorFormat(
+                                            IOUtil.ReadU16LE(Data, offs + pos * 2),
+                                            ColorFormat.RGBA5551,
+                                            ColorFormat.ARGB8888);
+                                }
+                                offs += 64 * 2;
+                            }
+                        }
+                        break;
+                    case ImageFormat.RGB565:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    res[(y + y2) * stride + x + x2] =
+                                        GFXUtil.ConvertColorFormat(
+                                            IOUtil.ReadU16LE(Data, offs + pos * 2),
+                                            ColorFormat.RGB565,
+                                            ColorFormat.ARGB8888);
+                                }
+                                offs += 64 * 2;
+                            }
+                        }
+                        break;
+                    case ImageFormat.RGBA4:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    res[(y + y2) * stride + x + x2] =
+                                        GFXUtil.ConvertColorFormat(
+                                            IOUtil.ReadU16LE(Data, offs + pos * 2),
+                                            ColorFormat.RGBA4444,
+                                            ColorFormat.ARGB8888);
+                                }
+                                offs += 64 * 2;
+                            }
+                        }
+                        break;
+                    case ImageFormat.LA8:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    ushort pixel = IOUtil.ReadU16LE(Data, offs + pos * 2);
+                                    res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
+                                        (byte)(pixel & 0xFF),
+                                        (byte)((pixel >> 8) & 0xFF),
+                                        (byte)((pixel >> 8) & 0xFF),
+                                        (byte)((pixel >> 8) & 0xFF),
+                                        ColorFormat.ARGB8888);
+                                }
+                                offs += 64 * 2;
+                            }
+                        }
+                        break;
+                    case ImageFormat.HILO8:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    ushort pixel = IOUtil.ReadU16LE(Data, offs + pos * 2);
+                                    res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
+                                        255,
+                                        (byte)(pixel >> 8),
+                                        (byte)(pixel & 0xFF),
+                                        255,
+                                        ColorFormat.ARGB8888);
+                                }
+                                offs += 64 * 2;
+                            }
+                        }
+                        break;
+                    case ImageFormat.L8:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
+                                        Data[offs + pos],
+                                        Data[offs + pos],
+                                        Data[offs + pos],
+                                        ColorFormat.ARGB8888);
+                                }
+                                offs += 64;
+                            }
+                        }
+                        break;
+                    case ImageFormat.A8:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
+                                        Data[offs + pos],
+                                        255,
+                                        255,
+                                        255,
+                                        ColorFormat.ARGB8888);
+                                }
+                                offs += 64;
+                            }
+                        }
+                        break;
+                    case ImageFormat.LA4:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    byte pixel = Data[offs + pos];
+                                    res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
+                                        (byte)((pixel & 0xF) * 0x11),
+                                        (byte)((pixel >> 4) * 0x11),
+                                        (byte)((pixel >> 4) * 0x11),
+                                        (byte)((pixel >> 4) * 0x11),
+                                        ColorFormat.ARGB8888);
+                                }
+                                offs += 64;
+                            }
+                        }
+                        break;
+                    case ImageFormat.L4:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    int shift = (pos & 1) * 4;
+                                    res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
+                                        (byte)(((Data[offs + pos / 2] >> shift) & 0xF) * 0x11),
+                                        (byte)(((Data[offs + pos / 2] >> shift) & 0xF) * 0x11),
+                                        (byte)(((Data[offs + pos / 2] >> shift) & 0xF) * 0x11),
+                                        ColorFormat.ARGB8888);
+                                }
+                                offs += 64 / 2;
+                            }
+                        }
+                        break;
+                    case ImageFormat.A4:
+                        for (int y = 0; y < Height; y += 8)
+                        {
+                            for (int x = 0; x < Width; x += 8)
+                            {
+                                for (int i = 0; i < 64; i++)
+                                {
+                                    int x2 = i % 8;
+                                    if (x + x2 >= physicalwidth) continue;
+                                    int y2 = i / 8;
+                                    if (y + y2 >= physicalheight) continue;
+                                    int pos = TileOrder[i];
+                                    int shift = (pos & 1) * 4;
+                                    res[(y + y2) * stride + x + x2] = GFXUtil.ToColorFormat(
+                                        (byte)(((Data[offs + pos / 2] >> shift) & 0xF) * 0x11),
+                                        255,
+                                        255,
+                                        255,
+                                        ColorFormat.ARGB8888);
+                                }
+                                offs += 64 / 2;
+                            }
+                        }
+                        break;
+                    case ImageFormat.ETC1://Some reference: http://www.khronos.org/registry/gles/extensions/OES/OES_compressed_ETC1_RGB8_texture.txt
+                    case ImageFormat.ETC1A4:
+                        {
+                            for (int y = 0; y < Height; y += 8)
+                            {
+                                for (int x = 0; x < Width; x += 8)
+                                {
+                                    for (int i = 0; i < 8; i += 4)
                                     {
-                                        ulong alpha = 0xFFFFFFFFFFFFFFFF;
-                                        if (Format == ImageFormat.ETC1A4)
+                                        for (int j = 0; j < 8; j += 4)
                                         {
-                                            alpha = IOUtil.ReadU64LE(Data, offs);
+                                            ulong alpha = 0xFFFFFFFFFFFFFFFF;
+                                            if (Format == ImageFormat.ETC1A4)
+                                            {
+                                                alpha = IOUtil.ReadU64LE(Data, offs);
+                                                offs += 8;
+                                            }
+                                            ulong data = IOUtil.ReadU64LE(Data, offs);
+                                            bool diffbit = ((data >> 33) & 1) == 1;
+                                            bool flipbit = ((data >> 32) & 1) == 1; //0: |||, 1: |-|
+                                            int r1, r2, g1, g2, b1, b2;
+                                            if (diffbit) //'differential' mode
+                                            {
+                                                int r = (int)((data >> 59) & 0x1F);
+                                                int g = (int)((data >> 51) & 0x1F);
+                                                int b = (int)((data >> 43) & 0x1F);
+                                                r1 = (r << 3) | ((r & 0x1C) >> 2);
+                                                g1 = (g << 3) | ((g & 0x1C) >> 2);
+                                                b1 = (b << 3) | ((b & 0x1C) >> 2);
+                                                r += (int)((data >> 56) & 0x7) << 29 >> 29;
+                                                g += (int)((data >> 48) & 0x7) << 29 >> 29;
+                                                b += (int)((data >> 40) & 0x7) << 29 >> 29;
+                                                r2 = (r << 3) | ((r & 0x1C) >> 2);
+                                                g2 = (g << 3) | ((g & 0x1C) >> 2);
+                                                b2 = (b << 3) | ((b & 0x1C) >> 2);
+                                            }
+                                            else //'individual' mode
+                                            {
+                                                r1 = (int)((data >> 60) & 0xF) * 0x11;
+                                                g1 = (int)((data >> 52) & 0xF) * 0x11;
+                                                b1 = (int)((data >> 44) & 0xF) * 0x11;
+                                                r2 = (int)((data >> 56) & 0xF) * 0x11;
+                                                g2 = (int)((data >> 48) & 0xF) * 0x11;
+                                                b2 = (int)((data >> 40) & 0xF) * 0x11;
+                                            }
+                                            int Table1 = (int)((data >> 37) & 0x7);
+                                            int Table2 = (int)((data >> 34) & 0x7);
+                                            for (int y3 = 0; y3 < 4; y3++)
+                                            {
+                                                for (int x3 = 0; x3 < 4; x3++)
+                                                {
+                                                    if (x + j + x3 >= physicalwidth) continue;
+                                                    if (y + i + y3 >= physicalheight) continue;
+
+                                                    int val = (int)((data >> (x3 * 4 + y3)) & 0x1);
+                                                    bool neg = ((data >> (x3 * 4 + y3 + 16)) & 0x1) == 1;
+                                                    uint c;
+                                                    if ((flipbit && y3 < 2) || (!flipbit && x3 < 2))
+                                                    {
+                                                        int add = ETC1Modifiers[Table1, val] * (neg ? -1 : 1);
+                                                        c = GFXUtil.ToColorFormat((byte)(((alpha >> ((x3 * 4 + y3) * 4)) & 0xF) * 0x11), (byte)ColorClamp(r1 + add), (byte)ColorClamp(g1 + add), (byte)ColorClamp(b1 + add), ColorFormat.ARGB8888);
+                                                    }
+                                                    else
+                                                    {
+                                                        int add = ETC1Modifiers[Table2, val] * (neg ? -1 : 1);
+                                                        c = GFXUtil.ToColorFormat((byte)(((alpha >> ((x3 * 4 + y3) * 4)) & 0xF) * 0x11), (byte)ColorClamp(r2 + add), (byte)ColorClamp(g2 + add), (byte)ColorClamp(b2 + add), ColorFormat.ARGB8888);
+                                                    }
+                                                    res[(i + y3) * stride + x + j + x3] = c;
+                                                }
+                                            }
                                             offs += 8;
                                         }
-                                        ulong data = IOUtil.ReadU64LE(Data, offs);
-                                        bool diffbit = ((data >> 33) & 1) == 1;
-                                        bool flipbit = ((data >> 32) & 1) == 1; //0: |||, 1: |-|
-                                        int r1, r2, g1, g2, b1, b2;
-                                        if (diffbit) //'differential' mode
-                                        {
-                                            int r = (int)((data >> 59) & 0x1F);
-                                            int g = (int)((data >> 51) & 0x1F);
-                                            int b = (int)((data >> 43) & 0x1F);
-                                            r1 = (r << 3) | ((r & 0x1C) >> 2);
-                                            g1 = (g << 3) | ((g & 0x1C) >> 2);
-                                            b1 = (b << 3) | ((b & 0x1C) >> 2);
-                                            r += (int)((data >> 56) & 0x7) << 29 >> 29;
-                                            g += (int)((data >> 48) & 0x7) << 29 >> 29;
-                                            b += (int)((data >> 40) & 0x7) << 29 >> 29;
-                                            r2 = (r << 3) | ((r & 0x1C) >> 2);
-                                            g2 = (g << 3) | ((g & 0x1C) >> 2);
-                                            b2 = (b << 3) | ((b & 0x1C) >> 2);
-                                        }
-                                        else //'individual' mode
-                                        {
-                                            r1 = (int)((data >> 60) & 0xF) * 0x11;
-                                            g1 = (int)((data >> 52) & 0xF) * 0x11;
-                                            b1 = (int)((data >> 44) & 0xF) * 0x11;
-                                            r2 = (int)((data >> 56) & 0xF) * 0x11;
-                                            g2 = (int)((data >> 48) & 0xF) * 0x11;
-                                            b2 = (int)((data >> 40) & 0xF) * 0x11;
-                                        }
-                                        int Table1 = (int)((data >> 37) & 0x7);
-                                        int Table2 = (int)((data >> 34) & 0x7);
-                                        for (int y3 = 0; y3 < 4; y3++)
-                                        {
-                                            for (int x3 = 0; x3 < 4; x3++)
-                                            {
-                                                if (x + j + x3 >= physicalwidth) continue;
-                                                if (y + i + y3 >= physicalheight) continue;
-
-                                                int val = (int)((data >> (x3 * 4 + y3)) & 0x1);
-                                                bool neg = ((data >> (x3 * 4 + y3 + 16)) & 0x1) == 1;
-                                                uint c;
-                                                if ((flipbit && y3 < 2) || (!flipbit && x3 < 2))
-                                                {
-                                                    int add = ETC1Modifiers[Table1, val] * (neg ? -1 : 1);
-                                                    c = GFXUtil.ToColorFormat((byte)(((alpha >> ((x3 * 4 + y3) * 4)) & 0xF) * 0x11), (byte)ColorClamp(r1 + add), (byte)ColorClamp(g1 + add), (byte)ColorClamp(b1 + add), ColorFormat.ARGB8888);
-                                                }
-                                                else
-                                                {
-                                                    int add = ETC1Modifiers[Table2, val] * (neg ? -1 : 1);
-                                                    c = GFXUtil.ToColorFormat((byte)(((alpha >> ((x3 * 4 + y3) * 4)) & 0xF) * 0x11), (byte)ColorClamp(r2 + add), (byte)ColorClamp(g2 + add), (byte)ColorClamp(b2 + add), ColorFormat.ARGB8888);
-                                                }
-                                                res[(i + y3) * stride + x + j + x3] = c;
-                                            }
-                                        }
-                                        offs += 8;
                                     }
                                 }
+                                res += stride * 8;
                             }
-                            res += stride * 8;
                         }
-                    }
-                    break;
+                        break;
+                }
             }
-            bitm.UnlockBits(d);
+            finally
+            {
+                if (d != null)
+                    bitm.UnlockBits(d);
+            }
             return bitm;
         }
 
-        public static Bitmap ToBitmap(byte[] Data, int Width, int Height, ImageFormat Format, byte Flag, bool ExactSize = false)
+        public static Bitmap ToBitmap(byte[] Data, int Width, int Height, ImageFormat Format, ImageFlag Flag, bool ExactSize = false)
         {
             Bitmap baseBitmap = ToBitmap(Data, 0, Width, Height, Format, ExactSize);
-            return ApplySwizzleTransformation(baseBitmap, Flag);
+            return ApplySwizzleTransformation(baseBitmap, (byte)Flag);
         }
 
         private static unsafe Bitmap ApplySwizzleTransformation(Bitmap baseBitmap, byte SwizzleFlag)
@@ -551,7 +546,7 @@ namespace _3DS.GPU
                 ConvHeight = 1 << (int)Math.Ceiling(Math.Log(Picture.Height, 2));
             }
             BitmapData d = null;
-            try 
+            try
             {
                 d = Picture.LockBits(new Rectangle(0, 0, Picture.Width, Picture.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 uint* res = (uint*)d.Scan0;
@@ -570,7 +565,7 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     Color c = Color.FromArgb((int)res[(y + y2) * d.Stride / 4 + x + x2]);
                                     result[offs + pos * 4 + 0] = c.A;
                                     result[offs + pos * 4 + 1] = c.B;
@@ -592,7 +587,7 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     Color c = Color.FromArgb((int)res[(y + y2) * d.Stride / 4 + x + x2]);
                                     result[offs + pos * 3 + 0] = c.B;
                                     result[offs + pos * 3 + 1] = c.G;
@@ -613,7 +608,7 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     IOUtil.WriteU16LE(result, offs + pos * 2, (ushort)GFXUtil.ConvertColorFormat(res[(y + y2) * d.Stride / 4 + x + x2],
                                     ColorFormat.ARGB8888,
                                     ColorFormat.RGBA5551));
@@ -633,11 +628,10 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     IOUtil.WriteU16LE(result, offs + pos * 2, (ushort)GFXUtil.ConvertColorFormat(res[(y + y2) * d.Stride / 4 + x + x2],
                                     ColorFormat.ARGB8888,
                                     ColorFormat.RGB565));
-                                    //GFXUtil.ArgbToRGB565(res[(y + y2) * d.Stride / 4 + x + x2]));
                                 }
                                 offs += 64 * 2;
                             }
@@ -654,7 +648,7 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     IOUtil.WriteU16LE(result, offs + pos * 2, (ushort)GFXUtil.ConvertColorFormat(res[(y + y2) * d.Stride / 4 + x + x2],
                                     ColorFormat.ARGB8888,
                                     ColorFormat.RGBA4444));
@@ -674,7 +668,7 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     Color c = Color.FromArgb((int)res[(y + y2) * d.Stride / 4 + x + x2]);
                                     ushort pixel = (ushort)((c.A << 8) | (byte)((0.299 * c.R) + (0.587 * c.G) + (0.114 * c.B)));
                                     IOUtil.WriteU16LE(result, offs + pos * 2, pixel);
@@ -694,7 +688,7 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     Color c = Color.FromArgb((int)res[(y + y2) * d.Stride / 4 + x + x2]);
                                     ushort pixel = (ushort)((c.G & 0xFF) | ((c.R & 0xFF) << 8));
                                     IOUtil.WriteU16LE(result, offs + pos * 2, pixel);
@@ -714,11 +708,10 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     Color c = Color.FromArgb((int)res[(y + y2) * d.Stride / 4 + x + x2]);
-                                    result[offs + pos] = c.B;
-                                    result[offs + pos] = c.G;
-                                    result[offs + pos] = c.R;
+                                    byte luminance = (byte)(0.299 * c.R + 0.587 * c.G + 0.114 * c.B);
+                                    result[offs + pos] = luminance;
                                 }
                                 offs += 64;
                             }
@@ -735,7 +728,7 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     Color c = Color.FromArgb((int)res[(y + y2) * d.Stride / 4 + x + x2]);
                                     result[offs + pos] = c.A;
                                 }
@@ -754,12 +747,13 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     Color c = Color.FromArgb((int)res[(y + y2) * d.Stride / 4 + x + x2]);
-                                    result[offs + pos + 1] = c.A;
-                                    result[offs + pos] = c.B;
-                                    result[offs + pos] = c.G;
-                                    result[offs + pos] = c.R;
+                                    byte luminance = (byte)(0.299 * c.R + 0.587 * c.G + 0.114 * c.B);
+                                    byte l4 = (byte)((luminance >> 4) & 0x0F);
+                                    byte a4 = (byte)((c.A >> 4) & 0x0F);
+                                    byte la4Pixel = (byte)((l4 << 4) | a4);
+                                    result[offs + pos] = la4Pixel;
                                 }
                                 offs += 64;
                             }
@@ -776,7 +770,7 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     Color c = Color.FromArgb((int)res[(y + y2) * d.Stride / 4 + x + x2]);
                                     int bytePos = offs + pos / 2;
                                     int shift = (pos % 2) * 4;
@@ -799,7 +793,7 @@ namespace _3DS.GPU
                                     if (x + x2 >= physicalwidth) continue;
                                     int y2 = i / 8;
                                     if (y + y2 >= physicalheight) continue;
-                                    int pos = TileOrder[x2 % 4 + y2 % 4 * 4] + 16 * (x2 / 4) + 32 * (y2 / 4);
+                                    int pos = TileOrder[i];
                                     Color c = Color.FromArgb((int)res[(y + y2) * d.Stride / 4 + x + x2]);
                                     int bytePos = offs + pos / 2;
                                     int shift = (pos % 2) * 4;
@@ -871,9 +865,9 @@ namespace _3DS.GPU
             }
         }
 
-        public static unsafe byte[] FromBitmap(Bitmap Picture, ImageFormat Format, byte Flag, bool ExactSize = false)
+        public static unsafe byte[] FromBitmap(Bitmap Picture, ImageFormat Format, ImageFlag Flag, bool ExactSize = false)
         {
-            Bitmap transformedPicture = ApplyInverseTransformation(Picture, Flag);
+            Bitmap transformedPicture = ApplyInverseTransformation(Picture, (byte)Flag);
             return FromBitmap(transformedPicture, Format, ExactSize);
         }
 
@@ -921,6 +915,5 @@ namespace _3DS.GPU
             if (Color < 0) Color = 0;
             return Color;
         }
-
     }
 }
