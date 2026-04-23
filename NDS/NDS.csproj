@@ -77,6 +77,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="OpenTK">
+      <HintPath>..\Libraries\OpenTK.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -95,6 +98,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NitroSystem\FONT\NFTR.cs" />
+    <Compile Include="NitroSystem\G3D\MTX44.cs" />
     <Compile Include="NitroSystem\G3D\NSBVA.cs" />
     <Compile Include="NitroSystem\G3D\NSBTP.cs" />
     <Compile Include="NitroSystem\G3D\NSBTA.cs" />
