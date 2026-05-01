@@ -98,6 +98,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NitroSystem\FONT\NFTR.cs" />
+    <Compile Include="NitroSystem\G3D\AnmHeader.cs" />
+    <Compile Include="NitroSystem\G3D\GlNitro.cs" />
     <Compile Include="NitroSystem\G3D\MTX44.cs" />
     <Compile Include="NitroSystem\G3D\NSBVA.cs" />
     <Compile Include="NitroSystem\G3D\NSBTP.cs" />

@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using LibEveryFileExplorer.Collections;
+using System.Collections.Generic;
 using System.Drawing;
-using OpenTK;
 
 namespace LibEveryFileExplorer.IO
 {
-    public static class Extensions
+    public static class EndianBinaryReaderExtensions
     {
         public static Dictionary<string, long> Markers = new Dictionary<string, long>();
 
@@ -31,36 +31,6 @@ namespace LibEveryFileExplorer.IO
         public static void ClearMarkers(this EndianBinaryReader er)
         {
             Markers.Clear();
-        }
-
-        public static float ReadSingleInt32Exp12(this EndianBinaryReader er)
-        {
-            return (float)er.ReadInt32() / 4096;
-        }
-
-        public static float[] ReadSingleInt32Exp12s(this EndianBinaryReader er, int count)
-        {
-            float[] values = new float[count];
-            for (int i = 0; i < count; i++)
-            {
-                values[i] = er.ReadSingleInt32Exp12();
-            }
-            return values;
-        }
-
-        public static float ReadSingleInt16Exp12(this EndianBinaryReader er)
-        {
-            return (float)er.ReadInt16() / 4096;
-        }
-
-        public static float[] ReadSingleInt16Exp12s(this EndianBinaryReader er, int count)
-        {
-            float[] values = new float[count];
-            for (int i = 0; i < count; i++)
-            {
-                values[i] = er.ReadSingleInt16Exp12();
-            }
-            return values;
         }
 
         public static int ReadVariableLength(this EndianBinaryReader er)

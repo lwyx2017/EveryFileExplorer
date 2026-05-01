@@ -71,9 +71,6 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="OpenTK">
-      <HintPath>..\Libraries\OpenTK.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -117,7 +114,7 @@
     <Compile Include="Files\IUseOtherFiles.cs" />
     <Compile Include="Files\IViewable.cs" />
     <Compile Include="Files\IWriteable.cs" />
-    <Compile Include="IO\Extensions.cs" />
+    <Compile Include="IO\EndianBinaryReaderExtensions.cs" />
     <Compile Include="IO\Serialization\BinaryBOMAttribute.cs" />
     <Compile Include="IO\SignatureNotCorrectException.cs" />
     <Compile Include="Files\SimpleFileSystem\EFESFSFile.cs" />

@@ -88,6 +88,14 @@ namespace LibEveryFileExplorer.IO
             return (uint)(Data[Offset] | (Data[Offset + 1] << 8) | (Data[Offset + 2] << 16) | (Data[Offset + 3] << 24));
         }
 
+        public static uint[] ReadU32sLE(byte[] Data, int Offset, int Count)
+        {
+            uint[] res = new uint[Count];
+            for (int i = 0; i < Count; i++)
+                res[i] = ReadU32LE(Data, Offset + i * 4);
+            return res;
+        }
+
         public static uint ReadU32BE(byte[] Data, int Offset)
         {
             return (uint)((Data[Offset] << 24) | (Data[Offset + 1] << 16) | (Data[Offset + 2] << 8) | Data[Offset + 3]);

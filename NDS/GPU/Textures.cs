@@ -679,5 +679,80 @@ namespace NDS.GPU
             }
             return result;
         }
+
+        private static int[][] ShiftList;
+
+        public static int EncodeColor(int value)
+        {
+            int[] channels = { 3, 2, 1, 5, 5, 5 };
+            int result = 0;
+            int bitOffset = 0;
+            int half = channels.Length / 2;
+            for (int i = 0; i < half; i++)
+            {
+                int channel = channels[half - i - 1];
+                int bits = channels[half * 2 - i - 1];
+                int multiplier = ShiftList[bits][1];
+                int mask = ShiftList[bits][0];
+                int component = 0;
+                switch (channel)
+                {
+                    case 0:
+                        component = (value >> 24) & 0xFF;
+                        break;
+                    case 1:
+                        component = (value >> 16) & 0xFF;
+                        break;
+                    case 2:
+                        component = (value >> 8) & 0xFF;
+                        break;
+                    case 3:
+                        component = value & 0xFF;
+                        break;
+                    case 4:
+                        component = value & 0xFF;
+                        break;
+                }
+                result |= ((component / multiplier) & mask) << bitOffset;
+                bitOffset += bits;
+            }
+            return (short)result;
+        }
+
+        public static int DecodeColor(int value)
+        {
+            int[] channels = { 3, 2, 1, 5, 5, 5 };
+            int result = -16777216;
+            int bitOffset = 0;
+            int half = channels.Length / 2;
+            for (int i = 0; i < half; i++)
+            {
+                int channel = channels[half - i - 1];
+                int bits = channels[half * 2 - i - 1];
+                int multiplier = ShiftList[bits][1];
+                int mask = ShiftList[bits][0];
+                int component = ((value >> bitOffset) & mask) * multiplier;
+                switch (channel)
+                {
+                    case 0:
+                        result |= component << 24;
+                        break;
+                    case 1:
+                        result |= component << 16;
+                        break;
+                    case 2:
+                        result |= component << 8;
+                        break;
+                    case 3:
+                        result |= component;
+                        break;
+                    case 4:
+                        result = (component << 16) | (component << 8) | component;
+                        break;
+                }
+                bitOffset += bits;
+            }
+            return result;
+        }
     }
 }
