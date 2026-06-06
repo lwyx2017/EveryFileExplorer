@@ -152,6 +152,12 @@
     <Compile Include="UI\BMGViewer.Designer.cs">
       <DependentUpon>BMGViewer.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\STRMViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\STRMViewer.Designer.cs">
+      <DependentUpon>STRMViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\SDATViewer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -255,6 +261,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\BMGViewer.resx">
       <DependentUpon>BMGViewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\STRMViewer.resx">
+      <DependentUpon>STRMViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\SDATViewer.resx">
       <DependentUpon>SDATViewer.cs</DependentUpon>
