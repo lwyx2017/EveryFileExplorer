@@ -225,5 +225,15 @@ namespace LibEveryFileExplorer.IO
             }
             return byte.Parse(hex, NumberStyles.HexNumber);
         }
+
+        public static byte[] SignedPCM8ToUnsigned(byte[] data)
+        {
+            byte[] array = new byte[data.Length];
+            for (int i = 0; i < data.Length; i++)
+            {
+                array[i] = (byte)(data[i] ^ 0x80);
+            }
+            return array;
+        }
     }
 }

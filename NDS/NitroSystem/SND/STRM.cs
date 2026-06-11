@@ -1,16 +1,15 @@
-using CommonFiles;
-using LibEveryFileExplorer.Files;
-using LibEveryFileExplorer.IO;
-using NDS.SND;
-using NDS.UI;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Windows.Forms;
+using CommonFiles;
+using LibEveryFileExplorer.Files;
+using LibEveryFileExplorer.IO;
+using NDS.SND;
+using NDS.UI;
 
 namespace NDS.NitroSystem.SND
 {
@@ -320,20 +319,10 @@ namespace NDS.NitroSystem.SND
                     array = Data.ToList().GetRange(offset, (int)nBlockLen).ToArray();
                     break;
                 default:
-                    array = SignedPCM8ToUnsigned(Data.ToList().GetRange(offset, (int)nBlockLen).ToArray());
+                    array = IOUtil.SignedPCM8ToUnsigned(Data.ToList().GetRange(offset, (int)nBlockLen).ToArray());
                     break;
             }
             offset += (int)nBlockLen;
-            return array;
-        }
-
-        private byte[] SignedPCM8ToUnsigned(byte[] data)
-        {
-            byte[] array = new byte[data.Length];
-            for (int i = 0; i < data.Length; i++)
-            {
-                array[i] = (byte)(data[i] ^ 0x80);
-            }
             return array;
         }
 
