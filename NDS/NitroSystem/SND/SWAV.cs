@@ -162,7 +162,6 @@ namespace NDS.NitroSystem.SND
             public DataSection()
             {
                 Signature = "DATA";
-
             }
             public DataSection(EndianBinaryReader er)
             {
@@ -180,6 +179,12 @@ namespace NDS.NitroSystem.SND
                 {
                     Data = er.ReadBytes((int)(er.BaseStream.Length - er.BaseStream.Position));
                 }
+            }
+            public DataSection(SWAVInfo Info, byte[] Data)
+            {
+                Signature = "DATA";
+                this.Info = Info;
+                this.Data = Data;
             }
             public void Write(EndianBinaryWriterEx er)
             {
@@ -239,6 +244,13 @@ namespace NDS.NitroSystem.SND
             }
             return null;
         }
+
+        public SWAV(SWAVInfo Info, byte[] Data)
+        {
+            Header = new SWAVHeader();
+            SWAVDataSection = new DataSection(Info, Data);
+        }
+
         public class SWAVIdentifier : FileFormatIdentifier
         {
             public override string GetCategory()
