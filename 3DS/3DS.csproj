@@ -125,7 +125,6 @@
     <Compile Include="NintendoWare\SND\CSTM.cs" />
     <Compile Include="NintendoWare\LYT1\DARC.cs" />
     <Compile Include="DVLB.cs" />
-    <Compile Include="Extensions.cs" />
     <Compile Include="GPU\Textures.cs" />
     <Compile Include="NintendoWare\SND\CWAV.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

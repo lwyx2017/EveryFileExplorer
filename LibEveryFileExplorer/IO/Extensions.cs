@@ -4,7 +4,7 @@ using System.Drawing;
 
 namespace LibEveryFileExplorer.IO
 {
-    public static class EndianBinaryReaderExtensions
+    public static class Extensions
     {
         public static Dictionary<string, long> Markers = new Dictionary<string, long>();
 
@@ -48,11 +48,25 @@ namespace LibEveryFileExplorer.IO
 
         public static Color ReadColor4Singles(this EndianBinaryReader er)
         {
-            int red = (int)(er.ReadSingle() * 255);
-            int green = (int)(er.ReadSingle() * 255);
-            int blue = (int)(er.ReadSingle() * 255);
-            int alpha = (int)(er.ReadSingle() * 255);
-            return Color.FromArgb(alpha, red, green, blue);
+            float R = er.ReadSingle();
+            float G = er.ReadSingle();
+            float B = er.ReadSingle();
+            float A = er.ReadSingle();
+
+            int r = (int)(0.5f + (R * 255f));
+            int g = (int)(0.5f + (G * 255f));
+            int b = (int)(0.5f + (B * 255f));
+            int a = (int)(0.5f + (A * 255f));
+
+            return Color.FromArgb(a, r, g, b);
+        }
+
+        public static void WriteColor4Singles(this EndianBinaryWriter er, Color Value)
+        {
+            er.Write((float)(Value.R / 255f));
+            er.Write((float)(Value.G / 255f));
+            er.Write((float)(Value.B / 255f));
+            er.Write((float)(Value.A / 255f));
         }
 
         public static Color ReadColor16(this EndianBinaryReader er)
@@ -71,6 +85,14 @@ namespace LibEveryFileExplorer.IO
             int blue = er.ReadByte();
             int alpha = er.ReadByte();
             return Color.FromArgb(alpha, red, green, blue);
+        }
+
+        public static void WriteColor8(this EndianBinaryWriter er, Color Value)
+        {
+            er.Write((byte)Value.R);
+            er.Write((byte)Value.G);
+            er.Write((byte)Value.B);
+            er.Write((byte)Value.A);
         }
 
         private static int smfGetVarLengthSize(int value)
