@@ -1,4 +1,5 @@
 ﻿using LibEveryFileExplorer.Collections;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -44,6 +45,16 @@ namespace LibEveryFileExplorer.IO
                 value |= b & 0x7F;
             }
             return value;
+        }
+
+        public static float ReadFloat24(this EndianBinaryReader er)
+        {
+            uint float24RawValue = er.ReadUInt32() & 0xFFFFFF;
+            if (float24RawValue == 0)
+            {
+                return 0f;
+            }
+            return BitConverter.ToSingle(BitConverter.GetBytes((((float24RawValue >> 16) & 0x7F) + 64 << 23) | (((float24RawValue >> 23) & 1) << 31) | ((float24RawValue & 0xFFFF) << 7)), 0);
         }
 
         public static Color ReadColor4Singles(this EndianBinaryReader er)
