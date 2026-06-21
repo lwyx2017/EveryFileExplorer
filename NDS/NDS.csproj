@@ -76,7 +76,14 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DirectMidiNet">
+      <HintPath>..\Libraries\DirectMidiNet.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="NAudio, Version=1.5.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Libraries\NAudio.dll</HintPath>
+    </Reference>
     <Reference Include="OpenTK">
       <HintPath>..\Libraries\OpenTK.dll</HintPath>
     </Reference>
@@ -105,6 +112,64 @@
     <Compile Include="NitroSystem\G3D\NSBTP.cs" />
     <Compile Include="NitroSystem\G3D\NSBTA.cs" />
     <Compile Include="NitroSystem\G3D\NSBMA.cs" />
+    <Compile Include="NitroSystem\SND\MusicPlayer.cs" />
+    <Compile Include="NitroSystem\SND\SSEQDecoder.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEncoder.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQAddVarEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQAllocTrackEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQAttackRateEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQBankChangeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQCallEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQCmpEqEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQCmpGeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQCmpGtEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQCmpLeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQCmpLtEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQCmpNeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQDecayRateEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQDelayEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQDivVarEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQEndOfTrackEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQExpressionEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQIfEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQJumpEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQLoopEndMarkerEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQLoopStartMarkerEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQMasterVolumeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQModulationDelayEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQModulationDepthEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQModulationRangeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQModulationSpeedEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQModulationTypeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQMulVarEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQNoteEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQNoteWaitModeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQPanEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQPitchEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQPitchRangeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQPortamentoEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQPortamentoOnOffEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQPortamentoTimeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQPrintVariableEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQRandomEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQRandVarEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQReleaseRateEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQReturnEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQSetVarEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQShiftVarEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQSubVarEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQSustainRateEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQSweepPitchEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQTempoEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQTieEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQTrackEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQTrackPriorityEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQTransposeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQVarEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQEvents\SSEQVolumeEvent.cs" />
+    <Compile Include="NitroSystem\SND\SSEQMidiResult.cs" />
+    <Compile Include="NitroSystem\SND\SSEQTrack.cs" />
     <Compile Include="NitroSystem\SND\STRM.cs" />
     <Compile Include="NitroSystem\SND\SSEQ.cs" />
     <Compile Include="NitroSystem\SND\SSAR.cs" />
