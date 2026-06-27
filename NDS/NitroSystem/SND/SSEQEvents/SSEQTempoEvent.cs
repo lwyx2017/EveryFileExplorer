@@ -21,7 +21,7 @@ namespace NDS.NitroSystem.SND.SSEQEvents
 
     	public override string ToString()
     	{
-    		return ("sound.sseq.events.tempo") + " (" + Tempo + " bpm)";
+    		return ("Tempo") + " (" + Tempo + " bpm)";
     	}
 
     	public override TreeNode GetTreeNode()

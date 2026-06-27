@@ -1,5 +1,6 @@
 using LibEveryFileExplorer.IO;
 using NAudio.Midi;
+using System;
 
 namespace NDS.NitroSystem.SND.SSEQEvents
 {
@@ -13,11 +14,22 @@ namespace NDS.NitroSystem.SND.SSEQEvents
     		ModulationDelay = er.ReadInt16();
     	}
 
-    	public override void AddMidiEvents(ref SSEQMidiResult Result)
-    	{
-    		MidiEvent midiEvent = MidiEvent.FromRawMessage(MidiMessage.ChangeControl(78, 64 + ModulationDelay / 2, Result.TrackID + 1).RawData);
-    		midiEvent.AbsoluteTime = Result.CurrentTime;
-    		Result.MidiTrack.Add(midiEvent);
-    	}
+        public override void AddMidiEvents(ref SSEQMidiResult Result)
+        {
+            try
+            {
+                int rawCcValue = 64 + ModulationDelay / 2;
+                int safeCcValue = rawCcValue;
+                if (safeCcValue < 0) safeCcValue = 0;
+                if (safeCcValue > 127) safeCcValue = 127;
+                MidiEvent midiEvent = MidiEvent.FromRawMessage(MidiMessage.ChangeControl(78, safeCcValue, Result.TrackID + 1).RawData);
+                midiEvent.AbsoluteTime = Result.CurrentTime;
+                Result.MidiTrack.Add(midiEvent);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+
+            }
+        }
     }
 }

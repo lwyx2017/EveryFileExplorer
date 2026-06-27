@@ -1,6 +1,7 @@
-using System.Windows.Forms;
 using LibEveryFileExplorer.IO;
 using NAudio.Midi;
+using System;
+using System.Windows.Forms;
 
 namespace NDS.NitroSystem.SND.SSEQEvents
 {
@@ -19,13 +20,17 @@ namespace NDS.NitroSystem.SND.SSEQEvents
             int patchIndex = ActualProgramNumber % 128;
             int bankSubNumber = (ActualProgramNumber / 128) & 0xF;
             int bankMainNumber = (ActualProgramNumber / 128 / 128) & 0xF;
-            MidiEvent bankMainCtrlEvent = MidiEvent.FromRawMessage(MidiMessage.ChangeControl(0, bankMainNumber, midiConvertResult.TrackID + 1).RawData);
+            int midiChannel = midiConvertResult.TrackID + 1;
+            if (midiChannel < 1) midiChannel = 1;
+            if (midiChannel > 16) midiChannel = 16;
+            MidiEvent bankMainCtrlEvent = MidiEvent.FromRawMessage(MidiMessage.ChangeControl(0, bankMainNumber, midiChannel).RawData);
             bankMainCtrlEvent.AbsoluteTime = midiConvertResult.CurrentTime;
             midiConvertResult.MidiTrack.Add(bankMainCtrlEvent);
-            MidiEvent bankSubCtrlEvent = MidiEvent.FromRawMessage(MidiMessage.ChangeControl(32, bankSubNumber, midiConvertResult.TrackID + 1).RawData);
+            MidiEvent bankSubCtrlEvent = MidiEvent.FromRawMessage(MidiMessage.ChangeControl(32, bankSubNumber, midiChannel).RawData);
             bankSubCtrlEvent.AbsoluteTime = midiConvertResult.CurrentTime;
             midiConvertResult.MidiTrack.Add(bankSubCtrlEvent);
-            midiConvertResult.MidiTrack.Add(new PatchChangeEvent(midiConvertResult.CurrentTime, midiConvertResult.TrackID + 1, patchIndex));
+            midiConvertResult.MidiTrack.Add(new PatchChangeEvent(midiConvertResult.CurrentTime, midiChannel, patchIndex));
+
             if (patchIndex != 127)
             {
                 return;

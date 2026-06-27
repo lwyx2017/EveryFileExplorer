@@ -20,7 +20,7 @@ namespace NDS.NitroSystem.SND.SSEQEvents
 
     	public override string ToString()
     	{
-    		return "sound.sseq.events.loopstartmarker";
+    		return "LoopStart";
     	}
     }
 }

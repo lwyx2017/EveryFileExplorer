@@ -36,7 +36,7 @@ namespace NDS.NitroSystem.SND
     	public MusicPlayer()
     	{
     		CDMusic.Initialize();
-    		CAPathPerformance.Initialize(CDMusic, null, null, DMUS_APATH.DYNAMIC_STEREO, 128u);
+    		CAPathPerformance.Initialize(CDMusic, null, null, DMUS_APATH.DYNAMIC_STEREO, 128);
     		CLoader.Initialize();
     		COutPort.Initialize(CDMusic);
     	}

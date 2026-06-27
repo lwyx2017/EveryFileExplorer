@@ -17,7 +17,7 @@ namespace NDS.NitroSystem.SND.SSEQEvents
 
     	public override string ToString()
     	{
-    		return "sound.sseq.events.eot";
+    		return "End of Track";
     	}
     }
 }

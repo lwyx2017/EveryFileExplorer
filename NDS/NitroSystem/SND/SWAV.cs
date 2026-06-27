@@ -206,6 +206,10 @@ namespace NDS.NitroSystem.SND
 
         public class SWAVInfo
         {
+            public SWAVInfo()
+            {
+
+            }
             public SWAVInfo(EndianBinaryReader er)
             {
                 nWaveType = er.ReadByte();

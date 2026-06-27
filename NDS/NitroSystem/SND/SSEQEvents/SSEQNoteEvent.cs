@@ -57,7 +57,7 @@ namespace NDS.NitroSystem.SND.SSEQEvents
             int noteOctave = base.EventID / 12 - 1;
             int noteIndexInOctave = base.EventID % 12;
             string noteName = NoteNameTable[noteIndexInOctave];
-            return "sound.sseq.events.note" + " (" + noteName + noteOctave + ")";
+            return "Note" + " (" + noteName + noteOctave + ")";
         }
 
         public override TreeNode GetTreeNode()

@@ -217,6 +217,12 @@
     <Compile Include="UI\BMGViewer.Designer.cs">
       <DependentUpon>BMGViewer.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\SSEQViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\SSEQViewer.Designer.cs">
+      <DependentUpon>SSEQViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\SWARViewer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -338,6 +344,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\BMGViewer.resx">
       <DependentUpon>BMGViewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SSEQViewer.resx">
+      <DependentUpon>SSEQViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\SWARViewer.resx">
       <DependentUpon>SWARViewer.cs</DependentUpon>

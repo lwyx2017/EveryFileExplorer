@@ -45,7 +45,7 @@ namespace NDS.NitroSystem.SND.SSEQEvents
 
     	public override string ToString()
     	{
-    		return "sound.sseq.events.alloc";
+    		return "Alloc Track";
     	}
 
     	public override TreeNode GetTreeNode()

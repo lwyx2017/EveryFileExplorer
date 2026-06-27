@@ -16,7 +16,7 @@ namespace NDS.NitroSystem.SND.SSEQEvents
 
     	public override string ToString()
     	{
-    		return "sound.sseq.events.if";
+    		return "If";
     	}
     }
 }

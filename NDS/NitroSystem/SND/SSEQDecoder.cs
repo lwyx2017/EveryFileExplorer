@@ -236,6 +236,8 @@ namespace NDS.NitroSystem.SND
                             nextMidiChannelId++;
                         }
 
+                        if (nextMidiChannelId > 15) nextMidiChannelId = 0;
+
                         currentEventIndex = StreamPositionToEventIndexMap[((SSEQTrackEvent)ParsedEventList[currentEventIndex]).Offset] - 1;
                         midiTrackContainerArray[activeTrackIndex] = new SSEQMidiResult(nextMidiChannelId, sharedGlobalVariableTable);
                         midiTrackContainerArray[activeTrackIndex].CurrentTime = midiTrackContainerArray[trackCallPreviousTrackStack.Peek()].CurrentTime;
@@ -308,11 +310,11 @@ namespace NDS.NitroSystem.SND
 
             return outputMidiTrackList.ToArray();
         }
-
-        public void GetTreeNodes(TreeNodeCollection uiNodeCollection)
+        public List<TreeNode> BuildSequenceTreeNodes()
         {
+            List<TreeNode> allNodes = new List<TreeNode>();
             TreeNode rootMainTrackNode = new TreeNode("Track 0", 4, 4);
-            uiNodeCollection.Add(rootMainTrackNode);
+            allNodes.Add(rootMainTrackNode);
 
             Stack<int> trackTreePreviousTrackStack = new Stack<int>();
             Stack<int> trackTreeReturnEventIndexStack = new Stack<int>();
@@ -348,13 +350,14 @@ namespace NDS.NitroSystem.SND
                     continue;
                 }
 
-                rootMainTrackNode.Nodes.Add(ParsedEventList[currentEventIndex].GetTreeNode());
+                TreeNode evtNode = ParsedEventList[currentEventIndex].GetTreeNode();
+                rootMainTrackNode.Nodes.Add(evtNode);
 
                 if (ParsedEventList[currentEventIndex] is SSEQCallEvent)
                 {
                     lastCallJumpEventIndex = currentEventIndex;
                     currentEventIndex = StreamPositionToEventIndexMap[((SSEQCallEvent)ParsedEventList[currentEventIndex]).Offset] - 1;
-                    rootMainTrackNode = rootMainTrackNode.Nodes[rootMainTrackNode.Nodes.Count - 1];
+                    rootMainTrackNode = evtNode;
                     continue;
                 }
 
@@ -370,7 +373,7 @@ namespace NDS.NitroSystem.SND
                 {
                     lastDirectJumpOffset = (int)((SSEQJumpEvent)ParsedEventList[currentEventIndex]).Offset;
                     currentEventIndex = StreamPositionToEventIndexMap[((SSEQJumpEvent)ParsedEventList[currentEventIndex]).Offset] - 1;
-                    rootMainTrackNode = rootMainTrackNode.Nodes[rootMainTrackNode.Nodes.Count - 1];
+                    rootMainTrackNode = evtNode;
                     treeJumpRedirectFlag = true;
                     continue;
                 }
@@ -394,6 +397,8 @@ namespace NDS.NitroSystem.SND
                     break;
                 }
             }
+
+            return allNodes;
         }
     }
 }

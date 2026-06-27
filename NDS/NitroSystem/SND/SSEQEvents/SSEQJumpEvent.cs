@@ -21,7 +21,7 @@ namespace NDS.NitroSystem.SND.SSEQEvents
 
     	public override string ToString()
     	{
-    		return "sound.sseq.events.jump";
+    		return "Jump";
     	}
 
     	public override TreeNode GetTreeNode()
