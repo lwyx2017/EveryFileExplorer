@@ -50,6 +50,21 @@ namespace NDS.UI
             }
             toolStripButton_wav.Enabled = false;
             toolStripButton_dls.Enabled = false;
+            if (dls != null)
+            {
+                toolStripButton_dls.Enabled = true;
+            }
+        }
+
+        public bool DlsButtonEnabled
+        {
+            get => toolStripButton_dls.Enabled;
+            set => toolStripButton_dls.Enabled = value;
+        }
+
+        public void SetDLS(byte[] DLS)
+        {
+            dls = DLS;
         }
 
         private void toolStripButton_play_Click(object sender, EventArgs e)
@@ -77,11 +92,11 @@ namespace NDS.UI
             if (loopStart != -1 && loopEnd != -1 && first)
             {
                 int length = m.GetLength();
-                int num = loopStart * 16;
-                int num2 = loopEnd * 16;
-                if (num <= length && num2 >= num)
+                int loopStartPosition = loopStart * 16;
+                int loopEndPosition = loopEnd * 16;
+                if (loopStartPosition <= length && loopEndPosition >= loopStartPosition)
                 {
-                    m.SetLoop(num, num2, loopCount);
+                    m.SetLoop(loopStartPosition, loopEndPosition, loopCount);
                 }
             }
 
@@ -102,14 +117,30 @@ namespace NDS.UI
 
         private void toolStripButton_dls_Click(object sender, EventArgs e)
         {
+            string formTitle = this.Text;
+            string defaultFileName;
+            if (Path.HasExtension(formTitle))
+            {
+                defaultFileName = Path.GetFileNameWithoutExtension(formTitle) + ".dls";
+            }
+            else
+            {
+                defaultFileName = formTitle + ".dls";
+            }
+            saveFileDialog1.Filter = "DLS Sound Bank (*.dls)|*.dls";
+            saveFileDialog1.DefaultExt = "dls";
+            saveFileDialog1.FileName = defaultFileName;
 
+            if (saveFileDialog1.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(saveFileDialog1.FileName))
+            {
+                File.WriteAllBytes(saveFileDialog1.FileName, dls);
+            }
         }
 
         private void toolStripButton_midi_Click(object sender, EventArgs e)
         {
             DialogResult res = MessageBox.Show("Do you want to export all channels?", "Export", MessageBoxButtons.YesNo);
             MidiEventCollection targetMidi;
-
             if (res == DialogResult.No)
             {
                 MidiEventCollection midiEventCollection = new MidiEventCollection(1, 48);
@@ -127,12 +158,21 @@ namespace NDS.UI
             {
                 targetMidi = Seq.SSEQDataSection.Midi;
             }
-
+            string formTitle = this.Text;
+            string defaultFileName;
+            if (Path.HasExtension(formTitle))
+            {
+                defaultFileName = Path.GetFileNameWithoutExtension(formTitle) + ".mid";
+            }
+            else
+            {
+                defaultFileName = formTitle + ".mid";
+            }
             saveFileDialog1.Filter = "MIDI file (*.mid)|*.mid";
             saveFileDialog1.DefaultExt = "mid";
-            saveFileDialog1.FileName = "";
+            saveFileDialog1.FileName = defaultFileName;
 
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(saveFileDialog1.FileName))
+            if (saveFileDialog1.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(saveFileDialog1.FileName))
             {
                 MidiFile.Export(saveFileDialog1.FileName, targetMidi);
             }

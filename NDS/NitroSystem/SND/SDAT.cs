@@ -1,13 +1,14 @@
-﻿using System;
-using System.Drawing;
-using System.IO;
-using System.Text;
-using System.Windows.Forms;
-using LibEveryFileExplorer.Files;
+﻿using LibEveryFileExplorer.Files;
 using LibEveryFileExplorer.Files.SimpleFileSystem;
 using LibEveryFileExplorer.IO;
 using LibEveryFileExplorer.IO.Serialization;
 using NDS.UI;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Text;
+using System.Windows.Forms;
 
 namespace NDS.NitroSystem.SND
 {
@@ -921,6 +922,41 @@ namespace NDS.NitroSystem.SND
                 strmDir.Files.Add(file);
             }
             return root;
+        }
+
+        public SBNK GetSBNKBySeqIndex(int seqIdx)
+        {
+            if (seqIdx < 0 || seqIdx >= InfoBlock.SEQRecord.Entries.Length)
+                return null;
+            var seqInfo = InfoBlock.SEQRecord.Entries[seqIdx];
+            ushort bankId = seqInfo.Bank;
+            if (bankId >= InfoBlock.BANKRecord.Entries.Length)
+                return null;
+            var bankInfo = InfoBlock.BANKRecord.Entries[bankId];
+            int fatId = (int)bankInfo.FileID;
+            if (fatId < 0 || fatId >= FileAllocationTable.Entries.Length)
+                return null;
+            byte[] bnkData = FileAllocationTable.Entries[fatId].Data;
+            return new SBNK(bnkData);
+        }
+
+        public SWAR[] GetSWARByBankId(int bankId)
+        {
+            if (bankId < 0 || bankId >= InfoBlock.BANKRecord.Entries.Length)
+                return Array.Empty<SWAR>();
+            var bnkInfo = InfoBlock.BANKRecord.Entries[bankId];
+            List<SWAR> warList = new List<SWAR>();
+            foreach (ushort warId in bnkInfo.WaveArc)
+            {
+                if (warId == 0xFFFF) continue;
+                if (warId >= InfoBlock.WAVEARCRecord.Entries.Length) continue;
+                var warInfo = InfoBlock.WAVEARCRecord.Entries[warId];
+                int fatIdx = (int)warInfo.FileID;
+                if (fatIdx < 0 || fatIdx >= FileAllocationTable.Entries.Length) continue;
+                byte[] warBin = FileAllocationTable.Entries[fatIdx].Data;
+                warList.Add(new SWAR(warBin));
+            }
+            return warList.ToArray();
         }
 
         public class SDATIdentifier : FileFormatIdentifier
