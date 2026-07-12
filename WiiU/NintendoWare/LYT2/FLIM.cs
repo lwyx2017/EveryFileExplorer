@@ -311,10 +311,10 @@ namespace WiiU.NintendoWare.LYT2
                 uint AA = (uint)(Textures.AAMode)0;
                 uint MipLevel = 0;
                 R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT Out = Textures.CalculateParameters(
-                Textures.GetTextureFormatConstant(fu), Image.Width, Image.Height, Depth, Dim, (Textures.TileMode)TileMode, (Textures.AAMode)AA, MipLevel);
+                Textures.GetTextureFormatConstant(fu), Image.Width, Image.Height, Depth, (Textures.TextureDimensions)Dim, (Textures.TileMode)TileMode, (Textures.AAMode)AA, MipLevel);
                 Bitmap bmp = null;
                 bmp = Textures.ToBitmap(Textures.Deswizzle(Data, Image.Width, Image.Height,
-                Textures.GetTextureFormatConstant(fu), (Textures.TileMode)TileMode, Swizzle, Out.Pitch, Depth, Dim, (Textures.AAMode)AA, MipLevel),
+                Textures.GetTextureFormatConstant(fu), (Textures.TileMode)TileMode, Swizzle, Out.Pitch, Depth, (Textures.TextureDimensions)Dim, (Textures.AAMode)AA, MipLevel),
                 Image.Width, Image.Height, fu);
                 return bmp;
             }

@@ -37,6 +37,18 @@ namespace WiiU.GPU
             AAMode_8X = 3,
         }
 
+        public enum TextureDimensions : uint
+        {
+            Texture_1D = 0,
+            Texture_2D = 1,
+            Texture_3D = 2,
+            Texture_CubeMap = 3,
+            Texture_1D_Array = 4,
+            Texture_2D_Array = 5,
+            Texture_2D_MSAA = 6,
+            Texture_2D_MSAA_Array = 7
+        }
+
         public enum ImageFormat : uint
         {
             RGBA8 = 0,
@@ -164,13 +176,13 @@ namespace WiiU.GPU
             return false;
         }
 
-        public static R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT CalculateParameters(uint Format, uint Width, uint Height, uint Depth, uint Dim, TileMode TileMode, AAMode AA, uint MipLevel)
+        public static R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT CalculateParameters(uint Format, uint Width, uint Height, uint Depth, TextureDimensions Dim, TileMode TileMode, AAMode AA, uint MipLevel)
         {
             R600Tiling t = new R600Tiling();
-            return t.GetSurfaceInfo(Format, Width, Height, Depth, Dim, (uint)TileMode, (uint)AA, MipLevel);
+            return t.GetSurfaceInfo(Format, Width, Height, Depth, (uint)Dim, (uint)TileMode, (uint)AA, MipLevel);
         }
 
-        public static byte[] Swizzle(byte[] LinearData, uint OriginalWidth, uint OriginalHeight, uint Format, TileMode TileMode, uint SwizzleConfig, uint Pitch, uint Depth, uint Dimension, AAMode AntiAliasing, uint MipLevel)
+        public static byte[] Swizzle(byte[] LinearData, uint OriginalWidth, uint OriginalHeight, uint Format, TileMode TileMode, uint SwizzleConfig, uint Pitch, uint Depth, TextureDimensions Dimension, AAMode AntiAliasing, uint MipLevel)
         {
             byte[] SwizzledData = new byte[LinearData.Length];
             Array.Copy(LinearData, 0, SwizzledData, 0, LinearData.Length);
@@ -181,7 +193,7 @@ namespace WiiU.GPU
                 FixDimension(ref MipLevelWidth, ref MipLevelHeight);
             }
             R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT SurfaceParams =
-            CalculateParameters(Format, OriginalWidth, OriginalHeight, Depth, Dimension, (TileMode)TileMode, (AAMode)AntiAliasing, MipLevel);
+            CalculateParameters(Format, OriginalWidth, OriginalHeight, Depth, Dimension, TileMode, AntiAliasing, MipLevel);
             uint PipeSwizzleMode = (SwizzleConfig >> 8) & 1;
             uint BankSwizzleMode = (SwizzleConfig >> 9) & 3;
             uint BitsPerPixel = SurfaceParams.BPP;
@@ -205,7 +217,7 @@ namespace WiiU.GPU
             return SwizzledData;
         }
 
-        public static byte[] Deswizzle(byte[] SwizzledData, uint OriginalWidth, uint OriginalHeight, uint Format, TileMode TileMode, uint SwizzleConfig, uint Pitch, uint Depth, uint Dimension, AAMode AntiAliasing, uint MipLevel)
+        public static byte[] Deswizzle(byte[] SwizzledData, uint OriginalWidth, uint OriginalHeight, uint Format, TileMode TileMode, uint SwizzleConfig, uint Pitch, uint Depth, TextureDimensions Dimension, AAMode AntiAliasing, uint MipLevel)
         {
             byte[] DeswizzledData = new byte[SwizzledData.Length];
             Array.Copy(SwizzledData, 0, DeswizzledData, 0, SwizzledData.Length);
@@ -216,7 +228,7 @@ namespace WiiU.GPU
                 FixDimension(ref MipLevelWidth, ref MipLevelHeight);
             }
             R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT SurfaceParams =
-            CalculateParameters(Format, OriginalWidth, OriginalHeight, Depth, Dimension, (TileMode)TileMode, (AAMode)AntiAliasing, MipLevel);
+            CalculateParameters(Format, OriginalWidth, OriginalHeight, Depth, Dimension, TileMode, AntiAliasing, MipLevel);
             uint PipeSwizzleMode = (SwizzleConfig >> 8) & 1;
             uint BankSwizzleMode = (SwizzleConfig >> 9) & 3;
             uint BitsPerPixel = SurfaceParams.BPP;
