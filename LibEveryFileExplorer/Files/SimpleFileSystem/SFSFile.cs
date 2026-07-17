@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace LibEveryFileExplorer.Files.SimpleFileSystem
 {
@@ -12,10 +13,12 @@ namespace LibEveryFileExplorer.Files.SimpleFileSystem
 			FileID = Id;
 			FileName = Name;
 			this.Parent = Parent;
-		}
+            Tag = null;
+        }
 		public String FileName;
 		public Int32 FileID;
 		public Byte[] Data;
+		public object Tag;
 
 		public SFSDirectory Parent;
 

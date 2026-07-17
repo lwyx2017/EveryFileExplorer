@@ -847,6 +847,7 @@ namespace NDS.NitroSystem.SND
                 }
                 SFSFile file = new SFSFile(fileId++, name + ".sseq", seqDir);
                 file.Data = data;
+                file.Tag = i;
                 seqDir.Files.Add(file);
             }
             var ssrcRecord = InfoBlock.SEQARCRecord;

@@ -43,13 +43,7 @@ namespace NDS.UI
                 EveryFileExplorerUtil.OpenFile(efFile, ((ViewableFile)Tag).File);
                 return;
             }
-            string fileNameNoExt = System.IO.Path.GetFileNameWithoutExtension(sfsFile.FileName);
-            int seqIndex = 0;
-            if (fileNameNoExt.StartsWith("Seq "))
-            {
-                string numStr = fileNameNoExt.Substring(4);
-                int.TryParse(numStr, out seqIndex);
-            }
+            int seqIndex = (int)sfsFile.Tag;
             byte[] dlsData = null;
             SBNK targetBank = Archive.GetSBNKBySeqIndex(seqIndex);
             if (targetBank != null)
