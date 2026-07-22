@@ -125,9 +125,17 @@ namespace _3DS.UI
             {
                 sfd.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
                 sfd.Title = "Export Hash Table Entries";
-                sfd.FileName = "HashTable";
                 sfd.DefaultExt = "txt";
-
+                if (!string.IsNullOrWhiteSpace(this.Text))
+                {
+                    string pureName = Path.GetFileName(this.Text);
+                    string nameNoExt = Path.GetFileNameWithoutExtension(pureName);
+                    sfd.FileName = $"{nameNoExt}.txt";
+                }
+                else
+                {
+                    sfd.FileName = "HashTable";
+                }
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
                     try

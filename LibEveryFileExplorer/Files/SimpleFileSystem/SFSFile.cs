@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace LibEveryFileExplorer.Files.SimpleFileSystem
 {

@@ -1,7 +1,8 @@
-﻿using System;
+﻿using GCNWii.NintendoWare.LYT;
+using System;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Windows.Forms;
-using GCNWii.NintendoWare.LYT;
 
 namespace GCNWii.UI
 {
@@ -31,7 +32,18 @@ namespace GCNWii.UI
 
         private void toolStripButton2_Click(object sender, EventArgs e)
         {
-            saveFileDialog1.FileName = toolStripComboBox1.SelectedIndex + ".png";
+            int texIndex = toolStripComboBox1.SelectedIndex;
+            string baseName;
+            if (!string.IsNullOrWhiteSpace(this.Text))
+            {
+                string pureFileName = Path.GetFileName(this.Text);
+                baseName = Path.GetFileNameWithoutExtension(pureFileName);
+            }
+            else
+            {
+                baseName = "texture";
+            }
+            saveFileDialog1.FileName = $"{baseName}_{texIndex}.png";
             if (saveFileDialog1.ShowDialog() == DialogResult.OK
                 && saveFileDialog1.FileName.Length > 0)
             {

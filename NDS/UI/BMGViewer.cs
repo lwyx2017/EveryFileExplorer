@@ -161,6 +161,11 @@ namespace NDS.UI
             sfd.Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
             sfd.Title = "Export Text File";
             sfd.DefaultExt = "txt";
+            if (!string.IsNullOrEmpty(this.Text))
+            {
+                string fileNameNoExt = Path.GetFileNameWithoutExtension(this.Text);
+                sfd.FileName = $"{fileNameNoExt}.txt";
+            }
             if (sfd.ShowDialog() == DialogResult.OK)
             {
                 try
