@@ -1,7 +1,8 @@
-﻿using System;
-using System.Windows.Forms;
+﻿using NDS.NitroSystem.Particles;
+using System;
 using System.Drawing.Imaging;
-using NDS.NitroSystem.Particles;
+using System.IO;
+using System.Windows.Forms;
 
 namespace NDS.UI
 {
@@ -32,7 +33,18 @@ namespace NDS.UI
 
         private void toolStripButton2_Click(object sender, EventArgs e)
         {
-            saveFileDialog1.FileName = toolStripComboBox1.SelectedIndex + ".png";
+            int texIndex = toolStripComboBox1.SelectedIndex;
+            string baseName;
+            if (!string.IsNullOrWhiteSpace(this.Text))
+            {
+                string pureFileName = Path.GetFileName(this.Text);
+                baseName = Path.GetFileNameWithoutExtension(pureFileName);
+            }
+            else
+            {
+                baseName = "Particle";
+            }
+            saveFileDialog1.FileName = $"{baseName}_{texIndex}.png";
             if (saveFileDialog1.ShowDialog() == DialogResult.OK
                 && saveFileDialog1.FileName.Length > 0)
             {
