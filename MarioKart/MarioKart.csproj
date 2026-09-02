@@ -170,6 +170,12 @@
     <Compile Include="UI\MK7ObjFlowViewer.Designer.cs">
       <DependentUpon>MK7ObjFlowViewer.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\MKDSKCLViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\MKDSKCLViewer.Designer.cs">
+      <DependentUpon>MKDSKCLViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\MKDSRouteViewer.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -232,6 +238,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\MK7ObjFlowViewer.resx">
       <DependentUpon>MK7ObjFlowViewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\MKDSKCLViewer.resx">
+      <DependentUpon>MKDSKCLViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\MKDSRouteViewer.resx">
       <DependentUpon>MKDSRouteViewer.cs</DependentUpon>

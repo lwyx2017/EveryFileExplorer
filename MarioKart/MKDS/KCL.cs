@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using LibEveryFileExplorer.Files;
-using System.Drawing;
-using LibEveryFileExplorer.Collections;
-using System.IO;
+﻿using CommonFiles;
 using LibEveryFileExplorer._3D;
-using CommonFiles;
+using LibEveryFileExplorer.Collections;
+using LibEveryFileExplorer.Files;
 using LibEveryFileExplorer.IO;
+using MarioKart.UI;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Windows.Forms;
 
 namespace MarioKart.MKDS
 {
@@ -52,11 +52,10 @@ namespace MarioKart.MKDS
 				er.Close();
 			}
 		}
-		public System.Windows.Forms.Form GetDialog()
+		public Form GetDialog()
 		{
-			return new System.Windows.Forms.Form();
-			//throw new NotImplementedException();
-		}
+            return new MKDSKCLViewer(this);
+        }
 
 		public string GetSaveDefaultFileFilter()
 		{
