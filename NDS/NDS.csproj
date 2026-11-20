@@ -76,9 +76,6 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DirectMidiNet">
-      <HintPath>..\Libraries\DirectMidiNet.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="NAudio, Version=1.5.4.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

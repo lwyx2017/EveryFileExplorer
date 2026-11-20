@@ -92,8 +92,8 @@ namespace NDS.UI
             if (loopStart != -1 && loopEnd != -1 && first)
             {
                 int length = m.GetLength();
-                int loopStartPosition = loopStart * 16;
-                int loopEndPosition = loopEnd * 16;
+                int loopStartPosition = loopStart;
+                int loopEndPosition = loopEnd;
                 if (loopStartPosition <= length && loopEndPosition >= loopStartPosition)
                 {
                     m.SetLoop(loopStartPosition, loopEndPosition, loopCount);
