@@ -198,18 +198,22 @@ namespace WiiU.GPU
             uint BankSwizzleMode = (SwizzleConfig >> 9) & 3;
             uint BitsPerPixel = SurfaceParams.BPP;
             uint BytesPerPixel = BitsPerPixel / 8;
-            for (uint RowIndex = 0; RowIndex < MipLevelHeight; RowIndex++)
+            uint SliceCount = GetSliceCount(Depth, Dimension, MipLevel);
+            for (uint SliceIndex = 0; SliceIndex < SliceCount; SliceIndex++)
             {
-                for (uint ColumnIndex = 0; ColumnIndex < MipLevelWidth; ColumnIndex++)
+                for (uint RowIndex = 0; RowIndex < MipLevelHeight; RowIndex++)
                 {
-                    uint SwizzledAddress = CalculateSwizzledAddress(ColumnIndex, RowIndex, SurfaceParams, PipeSwizzleMode, BankSwizzleMode);
-                    uint LinearAddress = (RowIndex * MipLevelWidth + ColumnIndex) * BytesPerPixel;
-                    if (SwizzledAddress + BytesPerPixel <= SwizzledData.Length &&
-                        LinearAddress + BytesPerPixel <= LinearData.Length)
+                    for (uint ColumnIndex = 0; ColumnIndex < MipLevelWidth; ColumnIndex++)
                     {
-                        for (int ByteOffset = 0; ByteOffset < BytesPerPixel; ByteOffset++)
+                        uint SwizzledAddress = CalculateSwizzledAddress(ColumnIndex, RowIndex, SliceIndex, SurfaceParams, PipeSwizzleMode, BankSwizzleMode);
+                        uint LinearAddress = ((SliceIndex * MipLevelWidth * MipLevelHeight) + RowIndex * MipLevelWidth + ColumnIndex) * BytesPerPixel;
+                        if (SwizzledAddress + BytesPerPixel <= SwizzledData.Length &&
+                            LinearAddress + BytesPerPixel <= LinearData.Length)
                         {
-                            SwizzledData[SwizzledAddress + (uint)ByteOffset] = LinearData[LinearAddress + (uint)ByteOffset];
+                            for (int ByteOffset = 0; ByteOffset < BytesPerPixel; ByteOffset++)
+                            {
+                                SwizzledData[SwizzledAddress + (uint)ByteOffset] = LinearData[LinearAddress + (uint)ByteOffset];
+                            }
                         }
                     }
                 }
@@ -233,18 +237,22 @@ namespace WiiU.GPU
             uint BankSwizzleMode = (SwizzleConfig >> 9) & 3;
             uint BitsPerPixel = SurfaceParams.BPP;
             uint BytesPerPixel = BitsPerPixel / 8;
-            for (uint RowIndex = 0; RowIndex < MipLevelHeight; RowIndex++)
+            uint SliceCount = GetSliceCount(Depth, Dimension, MipLevel);
+            for (uint SliceIndex = 0; SliceIndex < SliceCount; SliceIndex++)
             {
-                for (uint ColumnIndex = 0; ColumnIndex < MipLevelWidth; ColumnIndex++)
+                for (uint RowIndex = 0; RowIndex < MipLevelHeight; RowIndex++)
                 {
-                    uint SwizzledAddress = CalculateSwizzledAddress(ColumnIndex, RowIndex, SurfaceParams, PipeSwizzleMode, BankSwizzleMode);
-                    uint LinearAddress = (RowIndex * MipLevelWidth + ColumnIndex) * BytesPerPixel;
-                    if (LinearAddress + BytesPerPixel <= DeswizzledData.Length &&
-                        SwizzledAddress + BytesPerPixel <= SwizzledData.Length)
+                    for (uint ColumnIndex = 0; ColumnIndex < MipLevelWidth; ColumnIndex++)
                     {
-                        for (int ByteOffset = 0; ByteOffset < BytesPerPixel; ByteOffset++)
+                        uint SwizzledAddress = CalculateSwizzledAddress(ColumnIndex, RowIndex, SliceIndex, SurfaceParams, PipeSwizzleMode, BankSwizzleMode);
+                        uint LinearAddress = ((SliceIndex * MipLevelWidth * MipLevelHeight) + RowIndex * MipLevelWidth + ColumnIndex) * BytesPerPixel;
+                        if (LinearAddress + BytesPerPixel <= DeswizzledData.Length &&
+                            SwizzledAddress + BytesPerPixel <= SwizzledData.Length)
                         {
-                            DeswizzledData[LinearAddress + (uint)ByteOffset] = SwizzledData[SwizzledAddress + (uint)ByteOffset];
+                            for (int ByteOffset = 0; ByteOffset < BytesPerPixel; ByteOffset++)
+                            {
+                                DeswizzledData[LinearAddress + (uint)ByteOffset] = SwizzledData[SwizzledAddress + (uint)ByteOffset];
+                            }
                         }
                     }
                 }
@@ -252,20 +260,30 @@ namespace WiiU.GPU
             return DeswizzledData;
         }
 
-        private static uint CalculateSwizzledAddress(uint ColumnIndex, uint RowIndex, R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT SurfaceParams, uint PipeSwizzleMode, uint BankSwizzleMode)
+        private static uint CalculateSwizzledAddress(uint ColumnIndex, uint RowIndex, uint SliceIndex, R600Tiling._ADDR_COMPUTE_SURFACE_ADDRFROMCOORD_OUTPUT SurfaceParams, uint PipeSwizzleMode, uint BankSwizzleMode)
         {
             if (SurfaceParams.TileMode == 0 || SurfaceParams.TileMode == 1)
             {
-                return R600Tiling.ComputeSurfaceAddrFromCoordLinear(ColumnIndex, RowIndex, SurfaceParams.BPP, SurfaceParams.Pitch);
+                return R600Tiling.ComputeSurfaceAddrFromCoordLinear(ColumnIndex, RowIndex, SliceIndex, SurfaceParams.BPP, SurfaceParams.Pitch, SurfaceParams.Height);
             }
             else if (SurfaceParams.TileMode == 2 || SurfaceParams.TileMode == 3)
             {
-                return R600Tiling.ComputeSurfaceAddrFromCoordMicroTiled(ColumnIndex, RowIndex, SurfaceParams.BPP, SurfaceParams.Pitch, SurfaceParams.TileMode);
+                return R600Tiling.ComputeSurfaceAddrFromCoordMicroTiled(ColumnIndex, RowIndex, SliceIndex, SurfaceParams.BPP, SurfaceParams.Pitch, SurfaceParams.Height, SurfaceParams.TileMode);
             }
             else
             {
-                return R600Tiling.ComputeSurfaceAddrFromCoordMacroTiled(ColumnIndex, RowIndex, SurfaceParams.BPP, SurfaceParams.Pitch, SurfaceParams.Height, SurfaceParams.TileMode, PipeSwizzleMode, BankSwizzleMode);
+                return R600Tiling.ComputeSurfaceAddrFromCoordMacroTiled(ColumnIndex, RowIndex, SliceIndex, SurfaceParams.BPP, SurfaceParams.Pitch, SurfaceParams.Height, SurfaceParams.TileMode, PipeSwizzleMode, BankSwizzleMode);
             }
+        }
+
+        private static uint GetSliceCount(uint Depth, TextureDimensions Dimension, uint MipLevel)
+        {
+            uint SliceCount = Math.Max(1, Depth);
+            if (Dimension == TextureDimensions.Texture_3D)
+            {
+                SliceCount = Math.Max(1, SliceCount >> (int)MipLevel);
+            }
+            return SliceCount;
         }
 
         public static void FixDimension(ref uint Width, ref uint Height)

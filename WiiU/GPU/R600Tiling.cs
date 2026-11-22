@@ -64,7 +64,6 @@ namespace WiiU.GPU
 
         const uint MacroTileRotationFactor = 2;
         const uint AltMacroTileRotationFactor = 1;
-        uint rotationFactor = 0;
 
         public const uint MacroTilePitch_Base = 32;
         public const uint MacroTileWidth_Base = 32;
@@ -176,28 +175,28 @@ namespace WiiU.GPU
             public uint PipeConfig;
         }
 
-        public static uint ComputeSurfaceAddrFromCoordLinear(uint x, uint y, uint BPP, uint Pitch)
+        public static uint ComputeSurfaceAddrFromCoordLinear(uint x, uint y, uint slice, uint BPP, uint Pitch, uint Height)
         {
-            return (y * Pitch + x) * BPP / 8;
+            uint sliceOffset = slice * Pitch * Height;
+            return (sliceOffset + y * Pitch + x) * BPP / 8;
         }
 
-        public static uint ComputeSurfaceAddrFromCoordMicroTiled(uint x, uint y, uint BPP, uint Pitch, uint TileMode)
+        public static uint ComputeSurfaceAddrFromCoordMicroTiled(uint x, uint y, uint slice, uint BPP, uint Pitch, uint Height, uint TileMode)
         {
-            uint microTileThickness = 1;
-            if (TileMode == 3)
-            {
-                microTileThickness = 4;
-            }
+            uint microTileThickness = ComputeSurfaceThickness(TileMode);
             uint microTileBytes = (64 * microTileThickness * BPP + 7) / 8;
             uint microTilesPerRow = Pitch >> 3;
             uint microTileIndexX = x >> 3;
             uint microTileIndexY = y >> 3;
+            uint microTileIndexZ = slice / microTileThickness;
             uint microTileOffset = microTileBytes * (microTileIndexX + microTileIndexY * microTilesPerRow);
-            uint pixelIndex = ComputePixelIndexWithinMicroTile(x, y, BPP, TileMode);
-            return (BPP * pixelIndex >> 3) + microTileOffset;
+            uint sliceBytes = (Pitch * Height * microTileThickness * BPP + 7) / 8;
+            uint sliceOffset = microTileIndexZ * sliceBytes;
+            uint pixelIndex = ComputePixelIndexWithinMicroTile(x, y, slice, BPP, TileMode);
+            return (BPP * pixelIndex >> 3) + microTileOffset + sliceOffset;
         }
 
-        public static uint ComputePixelIndexWithinMicroTile(uint x, uint y, uint BPP, uint TileMode)
+        public static uint ComputePixelIndexWithinMicroTile(uint x, uint y, uint z, uint BPP, uint TileMode)
         {
             uint pixelBit0 = 0;
             uint pixelBit1 = 0;
@@ -263,8 +262,6 @@ namespace WiiU.GPU
                     pixelBit5 = (y & 4) >> 2;
                     break;
             }
-
-            uint z = 0;
 
             if (thickness > 1)
             {
@@ -333,32 +330,31 @@ namespace WiiU.GPU
             return bankIndex;
         }
 
-        public static uint ComputeSurfaceAddrFromCoordMacroTiled(uint x, uint y, uint BPP, uint Pitch, uint Height, uint TileMode, uint PipeSwizzle, uint BankSwizzle)
+        public static uint ComputeSurfaceAddrFromCoordMacroTiled(uint x, uint y, uint slice, uint BPP, uint Pitch, uint Height, uint TileMode, uint PipeSwizzle, uint BankSwizzle)
         {
             uint pipeCount = m_Pipes;
             uint bankCount = m_Banks;
             uint pipeBitCount = m_PipesBitCount;
             uint bankBitCount = m_BanksBitCount;
             uint pipeInterleaveBitCount = m_PipeInterLeaveBytesBitCount;
-            uint rowSize = m_RowSize;
             uint microTileThickness = ComputeSurfaceThickness(TileMode);
-            uint microTileTotalBits = BPP * microTileThickness * MicroTilePixels;
-            uint microTileBytes = (microTileTotalBits + 7) / 8;
-            uint pixelIndexInMicroTile = ComputePixelIndexWithinMicroTile(x, y, BPP, TileMode);
-            uint pixelBitsOffset = BPP * pixelIndexInMicroTile;
-            uint rowMicroTileCapacity = microTileBytes <= rowSize ? 1 : rowSize / microTileBytes;
-            uint tileSlices = Math.Max(1, 1 / rowMicroTileCapacity);
-            uint sliceIndex = pixelBitsOffset / (microTileTotalBits / tileSlices);
-            pixelBitsOffset %= microTileTotalBits / tileSlices;
-            uint pixelByteOffset = (pixelBitsOffset + 7) / 8;
+            uint pixelIndexInMicroTile = ComputePixelIndexWithinMicroTile(x, y, slice, BPP, TileMode);
+            uint pixelByteOffset = (BPP * pixelIndexInMicroTile + 7) / 8;
             uint pipeIndex = ComputePipeFromCoordWoRotation(x, y);
             uint bankIndex = ComputeBankFromCoordWoRotation(x, y);
             uint pipeBankIndex = pipeIndex + pipeCount * bankIndex;
             uint swizzleIndex = PipeSwizzle + pipeCount * BankSwizzle;
-            uint swizzledPipeBankIndex = (pipeBankIndex ^ ((pipeCount * sliceIndex * ((bankCount >> 1) + 1)) ^ swizzleIndex)) % (pipeCount * bankCount);
+            uint sliceIn = slice;
+            if (IsThickMacroTiled(TileMode))
+            {
+                sliceIn /= microTileThickness;
+            }
+            uint rotation = ComputeSurfaceRotationFromTileMode(TileMode);
+            uint swizzledPipeBankIndex = (pipeBankIndex ^ (swizzleIndex + sliceIn * rotation)) % (pipeCount * bankCount);
             pipeIndex = swizzledPipeBankIndex % pipeCount;
             bankIndex = swizzledPipeBankIndex / pipeCount;
-            uint sliceOffset = (Height * Pitch * microTileThickness * BPP * rowMicroTileCapacity + 7) / 8 * (sliceIndex / microTileThickness);
+            uint sliceBytes = (Height * Pitch * microTileThickness * BPP + 7) / 8;
+            uint sliceOffset = sliceBytes * (slice / microTileThickness);
             uint macroTilePitch = MacroTilePitch_Base;
             uint macroTileHeight = MacroTileHeight_Base;
             uint macroAspectRatio = ComputeMacroTileAspectRatio(TileMode);
@@ -811,8 +807,9 @@ namespace WiiU.GPU
             return tileSlices;
         }
 
-        public uint ComputeSurfaceRotationFromTileMode(uint TileMode)
+        public static uint ComputeSurfaceRotationFromTileMode(uint TileMode)
         {
+            uint rotationFactor = 0;
             if (TileMode >= TileMode_MacroTiled_RangeStart && TileMode <= TileMode_MacroTiled_RangeEnd)
             {
                 rotationFactor = MacroTileRotationFactor;
