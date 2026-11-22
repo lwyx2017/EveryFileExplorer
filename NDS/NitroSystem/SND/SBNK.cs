@@ -194,10 +194,15 @@ namespace NDS.NitroSystem.SND
                         for (int i = 0; i < 8; i++)
                         {
                             Regions[i] = er.ReadByte();
-                            if (regionCount == 0 && Regions[i] == 0)
+                        }
+                        regionCount = 0;
+                        for (int i = 0; i < 8; i++)
+                        {
+                            if (Regions[i] == 0)
                             {
-                                regionCount = i;
+                                break;
                             }
+                            regionCount++;
                         }
                         Info = new info[regionCount];
                         for (int i = 0; i < regionCount; i++)
