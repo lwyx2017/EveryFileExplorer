@@ -18,6 +18,7 @@ namespace NDS.NitroSystem.SND
         private IntPtr audioDriver;
         private IntPtr player;
         private int soundFontId = -1;
+        private int fallbackSoundFontId = -1;
 
         private Timer loopTimer;
         private bool looping;
@@ -125,6 +126,7 @@ namespace NDS.NitroSystem.SND
                     settings = IntPtr.Zero;
                 }
                 soundFontId = -1;
+                fallbackSoundFontId = -1;
                 useLoop = false;
                 looping = false;
                 midi = "";
@@ -206,8 +208,14 @@ namespace NDS.NitroSystem.SND
                 NativeMethods.fluid_synth_sfunload(synth, soundFontId, 1);
                 soundFontId = -1;
             }
+            if (fallbackSoundFontId >= 0)
+            {
+                NativeMethods.fluid_synth_sfunload(synth, fallbackSoundFontId, 1);
+                fallbackSoundFontId = -1;
+            }
             if (!useDLS)
             {
+                LoadFallbackSoundBankLocked();
                 return;
             }
             if (String.IsNullOrEmpty(dls) || !File.Exists(dls))
@@ -219,6 +227,20 @@ namespace NDS.NitroSystem.SND
             if (soundFontId == FluidFailed)
             {
                 throw new InvalidOperationException("FluidSynth could not load the DLS sound bank. Make sure the current libfluidsynth build includes libinstpatch/DLS support: " + dls);
+            }
+        }
+
+        private void LoadFallbackSoundBankLocked()
+        {
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "drivers", "gm.dls");
+            if (!File.Exists(path))
+            {
+                return;
+            }
+            fallbackSoundFontId = NativeMethods.fluid_synth_sfload(synth, ToUtf8(path), 1);
+            if (fallbackSoundFontId == FluidFailed)
+            {
+                fallbackSoundFontId = -1;
             }
         }
 
